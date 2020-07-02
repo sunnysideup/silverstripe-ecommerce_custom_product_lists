@@ -1,0 +1,30 @@
+{
+    "name": "sunnysideup/ecommerce_custom_product_lists",
+    "type": "silverstripe-vendormodule",
+    "description": "Create sets of custom product lists for your ecommerce store",
+    "keywords": [
+        "Silverstripe-CMS",
+        "CMS",
+        "Silverstripe",
+        "e-commerce",
+        "products"
+    ],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Nicolaas Francken",
+            "email": "modules@sunnysideup.co.nz",
+            "role": "lead developer"
+        }
+    ],
+    "require": {
+        "sunnysideup/ecommerce": "*",
+        "silverstripe/recipe-cms": "^4.4"
+    },
+    "extra": [],
+    "autoload": {
+        "psr-4": {
+            "Sunnysideup\\EcommerceCustomProductLists\\": "src/"
+        }
+    }
+}

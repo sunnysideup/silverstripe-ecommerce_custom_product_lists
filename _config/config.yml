@@ -1,0 +1,12 @@
+---
+Name: ecommerce_custom_product_lists
+Before: 'mysite/*'
+After:
+  - 'framework/*'
+  - 'cms/*'
+  - 'ecommerce/*'
+---
+
+ProductConfigModelAdmin:
+  managed_models:
+    - CustomProductList
