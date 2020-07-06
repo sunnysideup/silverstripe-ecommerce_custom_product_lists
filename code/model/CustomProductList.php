@@ -388,3 +388,4 @@ class CustomProductList extends DataObject
         return false;
     }
 }
+
