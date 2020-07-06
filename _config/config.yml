@@ -1,6 +1,6 @@
 ---
 Name: ecommerce_custom_product_lists
-Before: 'mysite/*'
+Before: 'app/*'
 After:
   - 'framework/*'
   - 'cms/*'

@@ -84,7 +84,7 @@ class CustomProductList extends DataObject
      * Deleting Permissions
      * @return boolean
      */
-    public function canDelete($member = null)
+    public function canDelete($member = null, $context = [])
     {
         return $this->Locked ? false : Injector::inst()->get('ProductGroup')->canDelete($member);
     }
@@ -296,7 +296,7 @@ class CustomProductList extends DataObject
             $list[$key] = trim($code);
         }
         if (! is_array($list)) {
-            $list = array();
+            $list = [];
         }
         // if(! count($list)) {
         //     $list = array(0 => 0);
@@ -319,7 +319,25 @@ class CustomProductList extends DataObject
      */
     public function getProductsFromInternalItemIDs()
     {
+
+/**
+  * ### @@@@ START REPLACEMENT @@@@ ###
+  * WHY: automated upgrade
+  * OLD: $className (case sensitive)
+  * NEW: $className (COMPLEX)
+  * EXP: Check if the class name can still be used as such
+  * ### @@@@ STOP REPLACEMENT @@@@ ###
+  */
         $className = EcommerceConfig::get('ProductGroup', 'base_buyable_class');
+
+/**
+  * ### @@@@ START REPLACEMENT @@@@ ###
+  * WHY: automated upgrade
+  * OLD: $className (case sensitive)
+  * NEW: $className (COMPLEX)
+  * EXP: Check if the class name can still be used as such
+  * ### @@@@ STOP REPLACEMENT @@@@ ###
+  */
         return $className::get()->filter(array('InternalItemID' => $this->getProductsAsArray()));
     }
 
