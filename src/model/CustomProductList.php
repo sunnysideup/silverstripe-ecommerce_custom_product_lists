@@ -1,4 +1,19 @@
 <?php
+
+namespace Sunnysideup\EcommerceCustomProductLists\Model;
+
+use DataObject;
+use Injector;
+use LiteralField;
+use GridField;
+use GridFieldBasicPageRelationConfigNoAddExisting;
+use GridFieldBasicPageRelationConfig;
+use RequiredFields;
+use Product;
+use Config;
+use EcommerceConfig;
+use URLSegmentFilter;
+
 /**
  * 1. titles should not be identical
  * 2. when copying accross, we have to make sure
