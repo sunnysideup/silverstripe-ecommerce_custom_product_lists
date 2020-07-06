@@ -2,17 +2,31 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
-use DataObject;
-use Injector;
-use LiteralField;
-use GridField;
-use GridFieldBasicPageRelationConfigNoAddExisting;
-use GridFieldBasicPageRelationConfig;
-use RequiredFields;
-use Product;
-use Config;
-use EcommerceConfig;
-use URLSegmentFilter;
+
+
+
+
+
+
+
+
+
+
+
+use Sunnysideup\Ecommerce\Pages\Product;
+use SilverStripe\Core\Injector\Injector;
+use Sunnysideup\Ecommerce\Pages\ProductGroup;
+use SilverStripe\Forms\LiteralField;
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
+use SilverStripe\Forms\GridField\GridField;
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfig;
+use SilverStripe\Forms\RequiredFields;
+use SilverStripe\Core\Config\Config;
+use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
+use Sunnysideup\Ecommerce\Config\EcommerceConfig;
+use SilverStripe\View\Parsers\URLSegmentFilter;
+use SilverStripe\ORM\DataObject;
+
 
 /**
  * 1. titles should not be identical
@@ -69,8 +83,8 @@ class CustomProductList extends DataObject
     );
 
     private static $many_many = array(
-        "ProductsToAdd" => "Product",
-        "ProductsToDelete" => "Product"
+        "ProductsToAdd" => Product::class,
+        "ProductsToDelete" => Product::class
     );
 
     private static $searchable_fields = array(
@@ -101,7 +115,7 @@ class CustomProductList extends DataObject
      */
     public function canDelete($member = null, $context = [])
     {
-        return $this->Locked ? false : Injector::inst()->get('ProductGroup')->canDelete($member);
+        return $this->Locked ? false : Injector::inst()->get(ProductGroup::class)->canDelete($member);
     }
 
     public function getCMSFields()
@@ -275,8 +289,8 @@ class CustomProductList extends DataObject
      */
     protected function setProductsFromArray($array, $write = false)
     {
-        $sep = Config::inst()->get('CustomProductList', 'separator');
-        $alt = Config::inst()->get('CustomProductList', 'separator_alternative');
+        $sep = Config::inst()->get(CustomProductList::class, 'separator');
+        $alt = Config::inst()->get(CustomProductList::class, 'separator_alternative');
 
         foreach ($array as $key => $value) {
             if ($value) {
@@ -305,7 +319,7 @@ class CustomProductList extends DataObject
      */
     public function getProductsAsArray()
     {
-        $sep = Config::inst()->get('CustomProductList', 'separator');
+        $sep = Config::inst()->get(CustomProductList::class, 'separator');
         $list =  explode($sep, $this->InternalItemCodeList);
         foreach ($list as $key => $code) {
             $list[$key] = trim($code);
@@ -343,7 +357,7 @@ class CustomProductList extends DataObject
   * EXP: Check if the class name can still be used as such
   * ### @@@@ STOP REPLACEMENT @@@@ ###
   */
-        $className = EcommerceConfig::get('ProductGroup', 'base_buyable_class');
+        $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
 
 /**
   * ### @@@@ START REPLACEMENT @@@@ ###

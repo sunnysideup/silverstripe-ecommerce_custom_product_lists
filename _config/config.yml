@@ -6,7 +6,6 @@ After:
   - 'cms/*'
   - 'ecommerce/*'
 ---
-
-ProductConfigModelAdmin:
+Sunnysideup\Ecommerce\Cms\ProductConfigModelAdmin:
   managed_models:
-    - CustomProductList
+    - Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList
