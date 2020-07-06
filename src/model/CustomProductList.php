@@ -2,33 +2,28 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
-
-
-use Sunnysideup\Ecommerce\Pages\Product;
-use SilverStripe\Core\Injector\Injector;
-use Sunnysideup\Ecommerce\Pages\ProductGroup;
-use SilverStripe\Forms\LiteralField;
-use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
-use SilverStripe\Forms\GridField\GridField;
-use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfig;
-use SilverStripe\Forms\RequiredFields;
 use SilverStripe\Core\Config\Config;
-use Sunnysideup\Ecommerce\Config\EcommerceConfig;
-use SilverStripe\View\Parsers\URLSegmentFilter;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataObject;
-
+use SilverStripe\View\Parsers\URLSegmentFilter;
+use Sunnysideup\Ecommerce\Config\EcommerceConfig;
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfig;
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
+use Sunnysideup\Ecommerce\Pages\Product;
+use Sunnysideup\Ecommerce\Pages\ProductGroup;
 
 /**
  * 1. titles should not be identical
  * 2. when copying accross, we have to make sure
  * 3. onAfterWrite, do we add products from InternalItemCodeList?
  * 4. How can we remove products?
- *
  */
 
 class CustomProductList extends DataObject
 {
-
     /**
      * how are product codes separated?
      *
@@ -44,60 +39,47 @@ class CustomProductList extends DataObject
      */
     private static $separator_alternative = ';';
 
-
-/**
-  * ### @@@@ START REPLACEMENT @@@@ ###
-  * OLD: private static $db (case sensitive)
-  * NEW: 
-    private static $table_name = '[SEARCH_REPLACE_CLASS_NAME_GOES_HERE]';
-
-    private static $db (COMPLEX)
-  * EXP: Check that is class indeed extends DataObject and that it is not a data-extension!
-  * ### @@@@ STOP REPLACEMENT @@@@ ###
-  */
-    
     private static $table_name = 'CustomProductList';
 
-    private static $db = array(
-        "Title" => "Varchar(255)",
-        "Locked" => "Boolean",
-        "InternalItemCodeList" => "Text",
-        "InternalItemCodeListCustom" => "Text"
-    );
+    private static $db = [
+        'Title' => 'Varchar(255)',
+        'Locked' => 'Boolean',
+        'InternalItemCodeList' => 'Text',
+        'InternalItemCodeListCustom' => 'Text',
+    ];
 
-    private static $indexes = array(
-        'ProductListIndex' => array(
+    private static $indexes = [
+        'ProductListIndex' => [
             'type' => 'unique',
-            'value' => '"Title"'
-        )
-    );
+            'value' => '"Title"',
+        ],
+    ];
 
-    private static $many_many = array(
-        "ProductsToAdd" => Product::class,
-        "ProductsToDelete" => Product::class
-    );
+    private static $many_many = [
+        'ProductsToAdd' => Product::class,
+        'ProductsToDelete' => Product::class,
+    ];
 
-    private static $searchable_fields = array(
-        "Title" => "PartialMatchFilter",
-        "Locked" => "ExactMatchFilter",
-        "InternalItemCodeList" => "PartialMatchFilter"
-    );
+    private static $searchable_fields = [
+        'Title' => 'PartialMatchFilter',
+        'Locked' => 'ExactMatchFilter',
+        'InternalItemCodeList' => 'PartialMatchFilter',
+    ];
 
+    private static $summary_fields = [
+        'Title' => 'Title',
+        'Locked.Nice' => 'Locked',
+        'InternalItemCodeList' => 'Included',
+    ];
 
-    private static $summary_fields = array(
-        "Title" => "Title",
-        "Locked.Nice" => "Locked",
-        "InternalItemCodeList" => "Included"
-    );
+    private static $field_labels = [
+        'InternalItemCodeList' => 'Included Codes',
+        'InternalItemCodeListCustom' => 'Manually added codes',
+    ];
 
-    private static $field_labels = array(
-        "InternalItemCodeList" => "Included Codes",
-        "InternalItemCodeListCustom" => "Manually added codes"
-    );
-
-    private static $default_sort = array(
-        "LastEdited" => "DESC"
-    );
+    private static $default_sort = [
+        'LastEdited' => 'DESC',
+    ];
 
     /**
      * Deleting Permissions
@@ -116,19 +98,18 @@ class CustomProductList extends DataObject
            <label class="left" for="Form_ItemEditForm_InternalItemCodeList">Included Codes</label>
               <div class="middleColumn">
                 <span id="Form_ItemEditForm_InternalItemCodeList" class="readonly textarea" style="word-break:break-all;">
-                    '.$this->InternalItemCodeList.'
+                    ' . $this->InternalItemCodeList . '
                 </span>
               </div>
               <label class="right" for="Form_ItemEditForm_InternalItemCodeList">
                   This is the <strong>master list</strong><br>
-                  Separate codes by '.$this->Config()->get('separator').'
+                  Separate codes by ' . $this->Config()->get('separator') . '
               </label>
         </div>
         ';
         $fields->replaceField(
             'InternalItemCodeList',
             LiteralField::create('InternalItemCodeList', $html)
-
         );
         $currentProductsField = GridField::create(
             'ProductsToBeShown',
@@ -162,7 +143,7 @@ class CustomProductList extends DataObject
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
-                    'Separate codes by '.$this->Config()->get('separator').'.'.
+                    'Separate codes by ' . $this->Config()->get('separator') . '.' .
                     ' Only use this option if products are not currently available on site.'
                 );
             }
@@ -182,10 +163,73 @@ class CustomProductList extends DataObject
         parent::populateDefaults();
     }
 
+    /**
+     * @return array
+     */
+    public function getProductsAsArray()
+    {
+        $sep = Config::inst()->get(CustomProductList::class, 'separator');
+        $list = explode($sep, $this->InternalItemCodeList);
+        foreach ($list as $key => $code) {
+            $list[$key] = trim($code);
+        }
+        if (! is_array($list)) {
+            $list = [];
+        }
+        // if(! count($list)) {
+        //     $list = array(0 => 0);
+        // }
+        return $list;
+    }
+
+    /**
+     * @return \SilverStripe\ORM\DataList
+     */
+    public function Products()
+    {
+        return $this->getProductsFromInternalItemIDs();
+    }
+
+    /**
+     * @return \SilverStripe\ORM\DataList
+     */
+    public function getProductsFromInternalItemIDs()
+    {
+        $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
+        return $className::get()->filter(['InternalItemID' => $this->getProductsAsArray()]);
+    }
+
+    public function onBeforeWrite()
+    {
+        parent::onBeforeWrite();
+        if ($this->Locked) {
+            //do nothing
+        } else {
+            $this->AddProductsToString($this->ProductsToAdd(), $write = false);
+            $this->AddProductCodesToString($this->InternalItemCodeListCustom, $write = false);
+            $this->RemoveProductsFromString($this->ProductsToDelete(), $write = false);
+            $this->InternalItemCodeListCustom = '';
+        }
+        // If there is no Title set, generate one from Title
+        $this->Title = $this->generateTitle();
+        // Ensure that this object has a non-conflicting Title value.
+        $count = 2;
+        while ($this->titleExists()) {
+            $this->Title = preg_replace('/-[0-9]+$/', null, $this->Title) . '-' . $count;
+            $count++;
+        }
+    }
+
+    public function onAfterWrite()
+    {
+        parent::onAfterWrite();
+        $this->ProductsToAdd()->removeAll();
+        $this->ProductsToDelete()->removeAll();
+    }
 
     /**
      * add many products
-     * @param SS_List $products
+     * @param \SilverStripe\ORM\SS_List $products
      * @param bool $write -should the dataobject be written?
      */
     protected function AddProductsToString($products, $write = false)
@@ -195,10 +239,9 @@ class CustomProductList extends DataObject
         }
     }
 
-
     /**
      * add one product, using InternalItemID
-     * @param string $internalItemID
+     * @param string $internalItemIDs
      * @param bool $write -should the dataobject be written?
      */
     protected function AddProductCodesToString($internalItemIDs, $write = false)
@@ -211,7 +254,7 @@ class CustomProductList extends DataObject
 
     /**
      * remove many products
-     * @param SS_List $products
+     * @param \SilverStripe\ORM\SS_List $products
      * @param bool $write -should the dataobject be written?
      */
     protected function RemoveProductsFromString($products, $write = false)
@@ -229,12 +272,11 @@ class CustomProductList extends DataObject
     protected function AddProductToString(Product $product, $write = false)
     {
         $array = $this->getProductsAsArray();
-        if (is_array($array) && in_array($product->InternalItemID, $array)) {
+        if (is_array($array) && in_array($product->InternalItemID, $array, true)) {
             return;
-        } else {
-            array_push($array, $product->InternalItemID);
-            $this->setProductsFromArray($array, $write);
         }
+        array_push($array, $product->InternalItemID);
+        $this->setProductsFromArray($array, $write);
     }
 
     /**
@@ -245,15 +287,12 @@ class CustomProductList extends DataObject
     protected function AddProductCodeToString($internalItemID, $write = false)
     {
         $array = $this->getProductsAsArray();
-        if (is_array($array) && in_array($internalItemID, $array)) {
+        if (is_array($array) && in_array($internalItemID, $array, true)) {
             return;
-        } else {
-            array_push($array, $internalItemID);
-            $this->setProductsFromArray($array, $write);
         }
+        array_push($array, $internalItemID);
+        $this->setProductsFromArray($array, $write);
     }
-
-
 
     /**
      * remove one product
@@ -263,12 +302,11 @@ class CustomProductList extends DataObject
     protected function RemoveProductFromString(Product $product, $write = false)
     {
         $array = $this->getProductsAsArray();
-        if (! in_array($product->InternalItemID, $array)) {
+        if (! in_array($product->InternalItemID, $array, true)) {
             return;
-        } else {
-            $array = array_diff($array, array($product->InternalItemID));
-            $this->setProductsFromArray($array, $write);
         }
+        $array = array_diff($array, [$product->InternalItemID]);
+        $this->setProductsFromArray($array, $write);
     }
 
     /**
@@ -302,135 +340,46 @@ class CustomProductList extends DataObject
         }
     }
 
-    /**
-     *
-     *
-     * @return array
-     */
-    public function getProductsAsArray()
-    {
-        $sep = Config::inst()->get(CustomProductList::class, 'separator');
-        $list =  explode($sep, $this->InternalItemCodeList);
-        foreach ($list as $key => $code) {
-            $list[$key] = trim($code);
-        }
-        if (! is_array($list)) {
-            $list = [];
-        }
-        // if(! count($list)) {
-        //     $list = array(0 => 0);
-        // }
-        return $list;
-    }
-
-    /**
-     *
-     * @return DataList
-     */
-    public function Products()
-    {
-        return $this->getProductsFromInternalItemIDs();
-    }
-
-    /**
-     *
-     * @return DataList
-     */
-    public function getProductsFromInternalItemIDs()
-    {
-
-/**
-  * ### @@@@ START REPLACEMENT @@@@ ###
-  * WHY: automated upgrade
-  * OLD: $className (case sensitive)
-  * NEW: $className (COMPLEX)
-  * EXP: Check if the class name can still be used as such
-  * ### @@@@ STOP REPLACEMENT @@@@ ###
-  */
-        $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
-
-/**
-  * ### @@@@ START REPLACEMENT @@@@ ###
-  * WHY: automated upgrade
-  * OLD: $className (case sensitive)
-  * NEW: $className (COMPLEX)
-  * EXP: Check if the class name can still be used as such
-  * ### @@@@ STOP REPLACEMENT @@@@ ###
-  */
-        return $className::get()->filter(array('InternalItemID' => $this->getProductsAsArray()));
-    }
-
-    public function onBeforeWrite()
-    {
-        parent::onBeforeWrite();
-        if ($this->Locked) {
-            //do nothing
-        } else {
-            $this->AddProductsToString($this->ProductsToAdd(), $write = false);
-            $this->AddProductCodesToString($this->InternalItemCodeListCustom, $write = false);
-            $this->RemoveProductsFromString($this->ProductsToDelete(), $write = false);
-            $this->InternalItemCodeListCustom = '';
-        }
-        // If there is no Title set, generate one from Title
-        $this->Title = $this->generateTitle();
-        // Ensure that this object has a non-conflicting Title value.
-        $count = 2;
-        while ($this->titleExists()) {
-            $this->Title = preg_replace('/-[0-9]+$/', null, $this->Title) . '-' . $count;
-            $count++;
-        }
-    }
-
-
-    public function onAfterWrite()
-    {
-        parent::onAfterWrite();
-        $this->ProductsToAdd()->removeAll();
-        $this->ProductsToDelete()->removeAll();
-    }
-
     protected function defaultTitle()
     {
         return _t(
             'CMSMain.NEWPAGE',
-            array('pagetype' => $this->i18n_singular_name())
+            ['pagetype' => $this->i18n_singular_name()]
         )
-        .($this->ID ? ' ' . $this->ID : '');
+        . ($this->ID ? ' ' . $this->ID : '');
     }
 
     protected function generateTitle()
     {
         $list = $this->Products();
         $title = $this->title;
-        if (!$title) {
+        if (! $title) {
             if ($list->count()) {
                 $title = implode('; ', $list->column('Title'));
             } else {
-                $title =  $this->defaultTitle();
+                $title = $this->defaultTitle();
             }
         }
         $filter = URLSegmentFilter::create();
         $title = $filter->filter($title);
 
         // Fallback to generic page name if path is empty (= no valid, convertable characters)
-        if (!$title || $title == '-' || $title == '-1') {
-            $title =  $this->defaultTitle();
+        if (! $title || $title === '-' || $title === '-1') {
+            $title = $this->defaultTitle();
         }
 
         return $title;
     }
 
     /**
-     *
-     *
      * @return boolean
      */
     protected function titleExists()
     {
         // Check existence
         $existingListsWithThisTitleCount = CustomProductList::get()
-            ->filter(array('Title' => $this->Title))
-            ->exclude(array('ID' => $this->ID))
+            ->filter(['Title' => $this->Title])
+            ->exclude(['ID' => $this->ID])
             ->count();
         if ($existingListsWithThisTitleCount) {
             return true;
@@ -439,4 +388,3 @@ class CustomProductList extends DataObject
         return false;
     }
 }
-
