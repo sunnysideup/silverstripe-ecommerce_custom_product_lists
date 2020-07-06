@@ -4,15 +4,6 @@ namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
 
 
-
-
-
-
-
-
-
-
-
 use Sunnysideup\Ecommerce\Pages\Product;
 use SilverStripe\Core\Injector\Injector;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
@@ -22,7 +13,6 @@ use SilverStripe\Forms\GridField\GridField;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfig;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\Core\Config\Config;
-use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
 use Sunnysideup\Ecommerce\Config\EcommerceConfig;
 use SilverStripe\View\Parsers\URLSegmentFilter;
 use SilverStripe\ORM\DataObject;
