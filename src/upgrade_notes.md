@@ -101,3 +101,12 @@ Running post-upgrade on "/c/Users/PC/Documents/www/upgrades/ecommerce_custom_pro
 [2020-07-06 15:38:28] Applying UpdateVisibilityRule to CustomProductList.php...
 Writing changes for 0 files
 ✔✔✔
+# running php upgrade inspect see: https://github.com/silverstripe/silverstripe-upgrader
+cd /c/Users/PC/Documents/www/upgrades/ecommerce_custom_product_lists
+php /c/Users/PC/Documents/www/upgrades/upgrader_tool/vendor/silverstripe/upgrader/bin/upgrade-code inspect /c/Users/PC/Documents/www/upgrades/ecommerce_custom_product_lists/ecommerce_custom_product_lists/src  --root-dir=/c/Users/PC/Documents/www/upgrades/ecommerce_custom_product_lists --write -vvv
+Writing changes for 0 files
+Running post-upgrade on "/c/Users/PC/Documents/www/upgrades/ecommerce_custom_product_lists/ecommerce_custom_product_lists/src"
+[2020-07-06 15:39:03] Applying ApiChangeWarningsRule to CustomProductList.php...
+[2020-07-06 15:39:05] Applying UpdateVisibilityRule to CustomProductList.php...
+Writing changes for 0 files
+✔✔✔
