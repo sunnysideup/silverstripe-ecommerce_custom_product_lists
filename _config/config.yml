@@ -1,10 +1,11 @@
 ---
 Name: ecommerce_custom_product_lists
-Before: 'app/*'
+Before:
+  - '#app'
 After:
-  - 'framework/*'
-  - 'cms/*'
-  - 'ecommerce/*'
+  - '#coreconfig'
+  - '#cmsextensions'
+  - '#ecommerce'
 ---
 Sunnysideup\Ecommerce\Cms\ProductConfigModelAdmin:
   managed_models:
