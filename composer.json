@@ -18,8 +18,7 @@
         }
     ],
     "require": {
-        "sunnysideup/ecommerce": "*",
-        "silverstripe/recipe-cms": "^4.4"
+        "sunnysideup/ecommerce": "*"
     },
     "extra": [],
     "autoload": {
