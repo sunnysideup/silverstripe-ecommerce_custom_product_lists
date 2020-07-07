@@ -51,7 +51,7 @@ class CustomProductList extends DataObject
     private static $indexes = [
         'ProductListIndex' => [
             'type' => 'unique',
-            'value' => '"Title"',
+            'columns' => ['Title'],
         ],
     ];
 
