@@ -344,7 +344,7 @@ class CustomProductList extends DataObject
     {
         return _t(
             'CMSMain.NEWPAGE',
-            ['pagetype' => $this->i18n_singular_name()]
+            'Custom Product List'
         )
         . ($this->ID ? ' ' . $this->ID : '');
     }
