@@ -83,7 +83,7 @@ class CustomProductList extends DataObject
 
     /**
      * Deleting Permissions
-     * @return boolean
+     * @return bool
      */
     public function canDelete($member = null, $context = [])
     {
@@ -372,7 +372,7 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     protected function titleExists()
     {
