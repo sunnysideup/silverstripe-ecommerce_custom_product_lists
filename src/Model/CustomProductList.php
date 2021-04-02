@@ -118,6 +118,7 @@ class CustomProductList extends DataObject
             GridFieldBasicPageRelationConfigNoAddExisting::create()
         );
         $currentProductsField->setDescription('Calculated products, based on the list of included product codes (see Main Tab).');
+
         $fields->addFieldToTab(
             'Root.Main',
             $currentProductsField
@@ -199,7 +200,7 @@ class CustomProductList extends DataObject
         return $className::get()->filter(['InternalItemID' => $this->getProductsAsArray()]);
     }
 
-    public function onBeforeWrite()
+    protected function onBeforeWrite()
     {
         parent::onBeforeWrite();
         if ($this->Locked) {
@@ -215,12 +216,12 @@ class CustomProductList extends DataObject
         // Ensure that this object has a non-conflicting Title value.
         $count = 2;
         while ($this->titleExists()) {
-            $this->Title = preg_replace('/-[0-9]+$/', null, $this->Title) . '-' . $count;
-            $count++;
+            $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
+            ++$count;
         }
     }
 
-    public function onAfterWrite()
+    protected function onAfterWrite()
     {
         parent::onAfterWrite();
         $this->ProductsToAdd()->removeAll();
@@ -266,7 +267,6 @@ class CustomProductList extends DataObject
 
     /**
      * add one product
-     * @param Product $product
      * @param bool $write -should the dataobject be written?
      */
     protected function AddProductToString(Product $product, $write = false)
@@ -275,7 +275,7 @@ class CustomProductList extends DataObject
         if (is_array($array) && in_array($product->InternalItemID, $array, true)) {
             return;
         }
-        array_push($array, $product->InternalItemID);
+        $array[] = $product->InternalItemID;
         $this->setProductsFromArray($array, $write);
     }
 
@@ -290,13 +290,12 @@ class CustomProductList extends DataObject
         if (is_array($array) && in_array($internalItemID, $array, true)) {
             return;
         }
-        array_push($array, $internalItemID);
+        $array[] = $internalItemID;
         $this->setProductsFromArray($array, $write);
     }
 
     /**
      * remove one product
-     * @param Product $product
      * @param bool $write -should the dataobject be written?
      */
     protected function RemoveProductFromString(Product $product, $write = false)
@@ -354,11 +353,7 @@ class CustomProductList extends DataObject
         $list = $this->Products();
         $title = $this->title;
         if (! $title) {
-            if ($list->count()) {
-                $title = implode('; ', $list->column('Title'));
-            } else {
-                $title = $this->defaultTitle();
-            }
+            $title = $list->count() ? implode('; ', $list->column('Title')) : $this->defaultTitle();
         }
         $filter = URLSegmentFilter::create();
         $title = $filter->filter($title);
@@ -381,10 +376,6 @@ class CustomProductList extends DataObject
             ->filter(['Title' => $this->Title])
             ->exclude(['ID' => $this->ID])
             ->count();
-        if ($existingListsWithThisTitleCount) {
-            return true;
-        }
-
-        return false;
+        return (bool) $existingListsWithThisTitleCount;
     }
 }
