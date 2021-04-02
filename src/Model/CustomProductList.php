@@ -161,7 +161,7 @@ class CustomProductList extends DataObject
     public function populateDefaults()
     {
         $this->Title = $this->defaultTitle();
-        parent::populateDefaults();
+        return parent::populateDefaults();
     }
 
     /**
