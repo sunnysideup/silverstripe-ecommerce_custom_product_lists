@@ -230,10 +230,10 @@ class CustomProductList extends DataObject
 
     /**
      * add many products
-     * @param \SilverStripe\ORM\SS_List $products
+     * @param \SilverStripe\ORM\DataList $products
      * @param bool $write -should the dataobject be written?
      */
-    protected function AddProductsToString($products, $write = false)
+    protected function AddProductsToString($products, ?bool $write = false)
     {
         foreach ($products as $product) {
             $this->AddProductToString($product, $write);
