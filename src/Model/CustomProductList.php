@@ -22,7 +22,6 @@ use Sunnysideup\Ecommerce\Pages\ProductGroup;
  * 3. onAfterWrite, do we add products from InternalItemCodeList?
  * 4. How can we remove products?
  */
-
 class CustomProductList extends DataObject
 {
     /**
@@ -83,7 +82,10 @@ class CustomProductList extends DataObject
     ];
 
     /**
-     * Deleting Permissions
+     * Deleting Permissions.
+     *
+     * @param null|mixed $member
+     *
      * @return bool
      */
     public function canDelete($member = null)
@@ -162,6 +164,7 @@ class CustomProductList extends DataObject
     public function populateDefaults()
     {
         $this->Title = $this->defaultTitle();
+
         return parent::populateDefaults();
     }
 
@@ -198,6 +201,7 @@ class CustomProductList extends DataObject
     public function getProductsFromInternalItemIDs()
     {
         $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
+
         return $className::get()->filter(['InternalItemID' => $this->getProductsAsArray()]);
     }
 
@@ -230,9 +234,10 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * add many products
+     * add many products.
+     *
      * @param \SilverStripe\ORM\DataList $products
-     * @param bool $write -should the dataobject be written?
+     * @param bool                       $write    -should the dataobject be written?
      */
     protected function AddProductsToString($products, ?bool $write = false)
     {
@@ -242,9 +247,10 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * add one product, using InternalItemID
+     * add one product, using InternalItemID.
+     *
      * @param string $internalItemIDs
-     * @param bool $write -should the dataobject be written?
+     * @param bool   $write           -should the dataobject be written?
      */
     protected function AddProductCodesToString($internalItemIDs, $write = false)
     {
@@ -255,9 +261,10 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * remove many products
+     * remove many products.
+     *
      * @param DataList $products
-     * @param bool $write -should the dataobject be written?
+     * @param bool     $write    -should the dataobject be written?
      */
     protected function RemoveProductsFromString($products, $write = false)
     {
@@ -267,7 +274,8 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * add one product
+     * add one product.
+     *
      * @param bool $write -should the dataobject be written?
      */
     protected function AddProductToString(Product $product, $write = false)
@@ -281,9 +289,10 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * add one product, using InternalItemID
+     * add one product, using InternalItemID.
+     *
      * @param string $internalItemID
-     * @param bool $write -should the dataobject be written?
+     * @param bool   $write          -should the dataobject be written?
      */
     protected function AddProductCodeToString($internalItemID, $write = false)
     {
@@ -296,7 +305,8 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * remove one product
+     * remove one product.
+     *
      * @param bool $write -should the dataobject be written?
      */
     protected function RemoveProductFromString(Product $product, $write = false)
@@ -358,7 +368,7 @@ class CustomProductList extends DataObject
         $title = $filter->filter($title);
 
         // Fallback to generic page name if path is empty (= no valid, convertable characters)
-        if (! $title || $title === '-' || $title === '-1') {
+        if (! $title || '-' === $title || '-1' === $title) {
             $title = $this->defaultTitle();
         }
 
@@ -374,7 +384,9 @@ class CustomProductList extends DataObject
         $existingListsWithThisTitleCount = CustomProductList::get()
             ->filter(['Title' => $this->Title])
             ->exclude(['ID' => $this->ID])
-            ->count();
+            ->count()
+        ;
+
         return (bool) $existingListsWithThisTitleCount;
     }
 }
