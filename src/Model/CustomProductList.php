@@ -86,7 +86,7 @@ class CustomProductList extends DataObject
      * Deleting Permissions
      * @return bool
      */
-    public function canDelete($member = null, $context = [])
+    public function canDelete($member = null)
     {
         return $this->Locked ? false : Injector::inst()->get(ProductGroup::class)->canDelete($member);
     }
