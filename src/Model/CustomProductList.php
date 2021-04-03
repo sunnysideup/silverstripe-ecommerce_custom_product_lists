@@ -311,14 +311,12 @@ class CustomProductList extends DataObject
     /**
      * @param array $array
      * @param bool $write -should the dataobject be written?
-     *
      * @return array
      */
-    protected function setProductsFromArray($array, $write = false)
+    protected function setProductsFromArray(array $array, ?bool $write = false) : array
     {
         $sep = Config::inst()->get(CustomProductList::class, 'separator');
         $alt = Config::inst()->get(CustomProductList::class, 'separator_alternative');
-
         foreach ($array as $key => $value) {
             if ($value) {
                 $value = trim($value);
@@ -337,6 +335,8 @@ class CustomProductList extends DataObject
         if ($write) {
             $this->write();
         }
+
+        return $array
     }
 
     protected function defaultTitle()
