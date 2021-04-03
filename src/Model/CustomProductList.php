@@ -336,7 +336,7 @@ class CustomProductList extends DataObject
             $this->write();
         }
 
-        return $array
+        return $array;
     }
 
     protected function defaultTitle()
