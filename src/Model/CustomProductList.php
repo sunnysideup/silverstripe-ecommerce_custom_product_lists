@@ -5,6 +5,7 @@ namespace Sunnysideup\EcommerceCustomProductLists\Model;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataList;
@@ -137,12 +138,18 @@ class CustomProductList extends DataObject
             if ($productsToAddField) {
                 $productsToAddField->setDescription('Use this field to add products, they will be remove again from this list after they have been added to main list.');
                 $productsToAddField->setConfig(GridFieldBasicPageRelationConfig::create());
+                $addConfig = $productsToAddField->getConfig();
+                $component = $addConfig->getComponentByType(GridFieldAddExistingAutocompleter::class);
+                $component->setSearchFields(["InternalItemID"]);
             }
             //products to remove
             $productsToRemoveField = $fields->dataFieldByName('ProductsToDelete');
             if ($productsToRemoveField) {
                 $productsToRemoveField->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.');
                 $productsToRemoveField->setConfig(GridFieldBasicPageRelationConfig::create());
+                $removeConfig = $productsToRemoveField->getConfig();
+                $component = $removeConfig->getComponentByType(GridFieldAddExistingAutocompleter::class);
+                $component->setSearchFields(["InternalItemID"]);
             }
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
