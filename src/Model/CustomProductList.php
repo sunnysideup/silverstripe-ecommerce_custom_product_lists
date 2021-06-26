@@ -82,6 +82,15 @@ class CustomProductList extends DataObject
         'LastEdited' => 'DESC',
     ];
 
+    private static $casting = [
+        'FullName' => 'Varchar',
+    ];
+
+    public function getFullName()
+    {
+        return $this->Title . ' ('.$this->getProductsFromInternalItemIDs()->count().' products)';
+    }
+
     /**
      * Deleting Permissions.
      *
@@ -186,7 +195,9 @@ class CustomProductList extends DataObject
             $list[$key] = trim($code);
         }
         if (! is_array($list)) {
-            $list = [];
+            $list = [
+                '' => ''
+            ];
         }
         // if(! count($list)) {
         //     $list = array(0 => 0);
