@@ -87,7 +87,7 @@ class CustomProductList extends DataObject
 
     public function getFullName()
     {
-        return $this->Title . ' ('.$this->getProductsFromInternalItemIDs()->count().' products)';
+        return $this->Title . ' (' . $this->getProductsFromInternalItemIDs()->count() . ' products)';
     }
 
     /**
@@ -148,7 +148,7 @@ class CustomProductList extends DataObject
                 $productsToAddField->setConfig(GridFieldBasicPageRelationConfig::create());
                 $addConfig = $productsToAddField->getConfig();
                 $component = $addConfig->getComponentByType(GridFieldAddExistingAutocompleter::class);
-                $component->setSearchFields(["InternalItemID"]);
+                $component->setSearchFields(['InternalItemID']);
             }
             //products to remove
             $productsToRemoveField = $fields->dataFieldByName('ProductsToDelete');
@@ -157,7 +157,7 @@ class CustomProductList extends DataObject
                 $productsToRemoveField->setConfig(GridFieldBasicPageRelationConfig::create());
                 $removeConfig = $productsToRemoveField->getConfig();
                 $component = $removeConfig->getComponentByType(GridFieldAddExistingAutocompleter::class);
-                $component->setSearchFields(["InternalItemID"]);
+                $component->setSearchFields(['InternalItemID']);
             }
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
@@ -195,7 +195,7 @@ class CustomProductList extends DataObject
         }
         if (! is_array($list)) {
             $list = [
-                '' => ''
+                '' => '',
             ];
         }
         // if(! count($list)) {
