@@ -68,9 +68,8 @@ class CustomProductList extends DataObject
     ];
 
     private static $summary_fields = [
-        'Title' => 'Title',
+        'FullName' => 'FullName',
         'Locked.Nice' => 'Locked',
-        'InternalItemCodeList' => 'Included',
     ];
 
     private static $field_labels = [
