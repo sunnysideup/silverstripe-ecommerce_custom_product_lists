@@ -379,7 +379,7 @@ class CustomProductList extends DataObject
         $list = $this->Products();
         $title = $this->title;
         if (! $title) {
-            $title = $list->count() ? implode('; ', $list->column('Title')) : $this->defaultTitle();
+            $title = ($list->exists() ? implode('; ', $list->column('Title')) : $this->defaultTitle());
         }
         $filter = URLSegmentFilter::create();
         $title = $filter->filter($title);
