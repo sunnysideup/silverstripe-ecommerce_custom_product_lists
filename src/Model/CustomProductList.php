@@ -395,15 +395,13 @@ class CustomProductList extends DataObject
     /**
      * @return bool
      */
-    protected function titleExists()
+    protected function titleExists() : bool
     {
         // Check existence
-        $existingListsWithThisTitleCount = CustomProductList::get()
+        return (bool) $existingListsWithThisTitleCount = CustomProductList::get()
             ->filter(['Title' => $this->Title])
             ->exclude(['ID' => $this->ID])
-            ->count()
+            ->exists()
         ;
-
-        return (bool) $existingListsWithThisTitleCount;
     }
 }
