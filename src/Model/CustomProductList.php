@@ -392,10 +392,7 @@ class CustomProductList extends DataObject
         return $title;
     }
 
-    /**
-     * @return bool
-     */
-    protected function titleExists() : bool
+    protected function titleExists(): bool
     {
         // Check existence
         return (bool) CustomProductList::get()
