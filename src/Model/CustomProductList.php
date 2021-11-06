@@ -186,7 +186,7 @@ class CustomProductList extends DataObject
     /**
      * @return array
      */
-    public function getProductsAsArray()
+    public function getProductsAsInternalItemsArray() : array
     {
         $sep = Config::inst()->get(CustomProductList::class, 'separator');
         $list = explode($sep, $this->InternalItemCodeList);
@@ -194,17 +194,13 @@ class CustomProductList extends DataObject
             $list[$key] = trim($code);
         }
         if (! is_array($list)) {
-            $list = [
-                '' => '',
-            ];
+            $list = [];
         }
-        // if(! count($list)) {
-        //     $list = array(0 => 0);
-        // }
         return $list;
     }
 
     /**
+     * This is useful as a way to separate
      * @return \SilverStripe\ORM\DataList
      */
     public function Products()
@@ -219,7 +215,7 @@ class CustomProductList extends DataObject
     {
         $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
 
-        return $className::get()->filter(['InternalItemID' => $this->getProductsAsArray()]);
+        return $className::get()->filter(['InternalItemID' => $this->getProductsAsInternalItemsArray()]);
     }
 
     protected function onBeforeWrite()
@@ -297,7 +293,7 @@ class CustomProductList extends DataObject
      */
     protected function AddProductToString(Product $product, $write = false)
     {
-        $array = $this->getProductsAsArray();
+        $array = $this->getProductsAsInternalItemsArray();
         if (is_array($array) && in_array($product->InternalItemID, $array, true)) {
             return;
         }
@@ -313,7 +309,7 @@ class CustomProductList extends DataObject
      */
     protected function AddProductCodeToString($internalItemID, $write = false)
     {
-        $array = $this->getProductsAsArray();
+        $array = $this->getProductsAsInternalItemsArray();
         if (is_array($array) && in_array($internalItemID, $array, true)) {
             return;
         }
@@ -328,7 +324,7 @@ class CustomProductList extends DataObject
      */
     protected function RemoveProductFromString(Product $product, $write = false)
     {
-        $array = $this->getProductsAsArray();
+        $array = $this->getProductsAsInternalItemsArray();
         if (! in_array($product->InternalItemID, $array, true)) {
             return;
         }
