@@ -183,10 +183,7 @@ class CustomProductList extends DataObject
         return parent::populateDefaults();
     }
 
-    /**
-     * @return array
-     */
-    public function getProductsAsInternalItemsArray() : array
+    public function getProductsAsInternalItemsArray(): array
     {
         $sep = Config::inst()->get(CustomProductList::class, 'separator');
         $list = explode($sep, $this->InternalItemCodeList);
@@ -196,11 +193,13 @@ class CustomProductList extends DataObject
         if (! is_array($list)) {
             $list = [];
         }
+
         return $list;
     }
 
     /**
-     * This is useful as a way to separate
+     * This is useful as a way to separate.
+     *
      * @return \SilverStripe\ORM\DataList
      */
     public function Products()
