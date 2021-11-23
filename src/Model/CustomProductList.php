@@ -16,7 +16,7 @@ use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConf
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
-
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
 /**
  * 1. titles should not be identical
  * 2. when copying accross, we have to make sure
@@ -145,19 +145,13 @@ class CustomProductList extends DataObject
             $productsToAddField = $fields->dataFieldByName('ProductsToAdd');
             if ($productsToAddField) {
                 $productsToAddField->setDescription('Use this field to add products, they will be remove again from this list after they have been added to main list.');
-                $productsToAddField->setConfig(GridFieldBasicPageRelationConfig::create());
-                $addConfig = $productsToAddField->getConfig();
-                $component = $addConfig->getComponentByType(GridFieldAddExistingAutocompleter::class);
-                $component->setSearchFields(['InternalItemID']);
+                $productsToAddField->setConfig(GridFieldConfigForProducts::create());
             }
             //products to remove
             $productsToRemoveField = $fields->dataFieldByName('ProductsToDelete');
             if ($productsToRemoveField) {
                 $productsToRemoveField->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.');
-                $productsToRemoveField->setConfig(GridFieldBasicPageRelationConfig::create());
-                $removeConfig = $productsToRemoveField->getConfig();
-                $component = $removeConfig->getComponentByType(GridFieldAddExistingAutocompleter::class);
-                $component->setSearchFields(['InternalItemID']);
+                $productsToRemoveField->setConfig(GridFieldConfigForProducts::create());
             }
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
