@@ -50,14 +50,14 @@ class CustomProductListAction extends DataObject
 
     public static function get_current_actions_to_start() : DataList
     {
-        // From, Now, Until
+        // Start, Now, Stop
         // ---F---N---U-----
         $now = self::get_now_string_for_database();
         return CustomProductListAction::get()
             ->filter(
                 [
-                    'FromDateTime:LessThan' => $now,
-                    'UntilDateTime:GreaterThan' => $now,
+                    'StartDateTime:LessThan' => $now,
+                    'StopDateTime:GreaterThan' => $now,
                     'Started' => false,
                 ],
             );
@@ -65,13 +65,13 @@ class CustomProductListAction extends DataObject
 
     public static function get_current_actions_to_end() : DataList
     {
-        // From, Now, Until
+        // Start, Now, Stop
         // ---F------U---N---
         $now = self::get_now_string_for_database();
         return CustomProductListAction::get()
             ->filter(
                 [
-                    'UntilDateTime:LessThan' => $now,
+                    'StopDateTime:LessThan' => $now,
                     'Ended' => false,
                 ],
             );
@@ -79,21 +79,35 @@ class CustomProductListAction extends DataObject
 
     private static $db = [
         'Title' => 'Varchar',
+        'StartDateTime' => 'DateTime',
         'Started' => 'Boolean',
-        'Ended' => 'Boolean',
-        'FromDateTime' => 'DateTime',
-        'UntilDateTime' => 'DateTime',
+        'StopDateTime' => 'DateTime',
+        'Stopped' => 'Boolean',
+        'RunNow' => 'Boolean',
     ];
 
     private static $many_many = [
         'CustomProductLists' => CustomProductList::class,
     ];
 
+    private static $summary_fields = [
+        'Title' => 'Title',
+        'StartDateTime.Nice' => 'Start',
+        'Started' => 'Started',
+        'StopDateTime.Nice' => 'Stop',
+        'Stopped' => 'Stopped',
+        'CustomProductLists.Count' => 'Lists',
+    ];
+
+    private static $casting = [
+        'ProductCount' => 'Int',
+    ];
+
     private static $indexes = [
-        'FromDateTime' => true,
-        'UntilDateTime' => true,
+        'StartDateTime' => true,
+        'StopDateTime' => true,
         'Started' => true,
-        'Ended' => true,
+        'Stopped' => true,
     ];
 
     private static $default_sort = [
@@ -111,7 +125,7 @@ class CustomProductListAction extends DataObject
         }
     }
 
-    public function getTitle() : string
+    public function getShortName() : string
     {
         user_error('Please extend this method: ' .__CLASS__.'::'  . __FUNCTION__);
         return 'Error';
@@ -138,8 +152,8 @@ class CustomProductListAction extends DataObject
             return false;
         }
         $now = strtotime('now');
-        $from = strtotime($this->FromDateTime);
-        $until = strtotime($this->UntilDateTime);
+        $from = strtotime($this->StartDateTime);
+        $until = strtotime($this->StopDateTime);
         return $from > $now && $until < $now;
     }
     /**
@@ -152,14 +166,48 @@ class CustomProductListAction extends DataObject
             return false;
         }
         $now = strtotime('now');
-        $until = strtotime($this->UntilDateTime);
+        $until = strtotime($this->StopDateTime);
         return  $until > $now;
     }
 
 
-    protected static function get_now_string_for_database(string $phrase = 'now') : string
+    public function getCMSFields()
     {
-        return Date('Y-m-d H:i:s', strtotime('now'));
+        $fields = parent::getCMSFields();
+        foreach(['Started', 'Stopped'] as $readOnlyField)
+        $fields->replaceField(
+            $readOnlyField,
+            $this->dataFieldByName($readOnlyField)->performReadonlyTransformation()
+        );
+        return $fields;
     }
 
+    public function canEdit($member = null)
+    {
+        return parent::canEdit($member);
+        if($this->Started) {
+            return false;
+        }
+    }
+
+    public function canDelete($member = null)
+    {
+        return parent::canDelete($member);
+        if($this->Started) {
+            return false;
+        }
+    }
+
+    protected static function get_now_string_for_database(string $phrase = 'now') : string
+    {
+        return Date('Y-m-d H:i:s', $phrase);
+    }
+
+    protected function onBeforeWrite()
+    {
+        parent::onBeforeWrite();
+        if(! $this->Title) {
+            $this->Title = $this->getShortName() . ', from '.$this->StartDateTime . ', until '.$this->StopDateTime;
+        }
+    }
 }

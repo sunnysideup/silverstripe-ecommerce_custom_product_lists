@@ -204,7 +204,7 @@ class CustomProductList extends DataObject
      *
      * @return \SilverStripe\ORM\DataList
      */
-    public function Products()
+    public function Products() : DataList
     {
         return $this->getProductsFromInternalItemIDs();
     }
@@ -212,7 +212,7 @@ class CustomProductList extends DataObject
     /**
      * @return \SilverStripe\ORM\DataList
      */
-    public function getProductsFromInternalItemIDs()
+    public function getProductsFromInternalItemIDs(): DataList
     {
         $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
 
@@ -258,6 +258,7 @@ class CustomProductList extends DataObject
         foreach ($products as $product) {
             $this->AddProductToString($product, $write);
         }
+        return $this;
     }
 
     /**
@@ -272,6 +273,7 @@ class CustomProductList extends DataObject
         foreach ($array as $internalItemID) {
             $this->AddProductCodeToString($internalItemID, $write);
         }
+        return $this;
     }
 
     /**
@@ -285,6 +287,7 @@ class CustomProductList extends DataObject
         foreach ($products as $product) {
             $this->RemoveProductFromString($product, $write);
         }
+        return $this;
     }
 
     /**
@@ -300,6 +303,7 @@ class CustomProductList extends DataObject
         }
         $array[] = $product->InternalItemID;
         $this->setProductsFromArray($array, $write);
+        return $this;
     }
 
     /**
@@ -316,6 +320,7 @@ class CustomProductList extends DataObject
         }
         $array[] = $internalItemID;
         $this->setProductsFromArray($array, $write);
+        return $this;
     }
 
     /**
@@ -331,6 +336,7 @@ class CustomProductList extends DataObject
         }
         $array = array_diff($array, [$product->InternalItemID]);
         $this->setProductsFromArray($array, $write);
+        return $this;
     }
 
     /**
@@ -362,7 +368,7 @@ class CustomProductList extends DataObject
         return $array;
     }
 
-    protected function defaultTitle()
+    protected function defaultTitle() : string
     {
         return _t(
             'CMSMain.NEWPAGE',
@@ -371,7 +377,7 @@ class CustomProductList extends DataObject
         . ($this->ID ? ' ' . $this->ID : '');
     }
 
-    protected function generateTitle()
+    protected function generateTitle() : string
     {
         $list = $this->Products();
         $title = $this->title;
@@ -398,4 +404,6 @@ class CustomProductList extends DataObject
             ->exists()
         ;
     }
+
+
 }

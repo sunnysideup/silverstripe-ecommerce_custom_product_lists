@@ -13,7 +13,7 @@ class RunCustomProductListActions extends BuildTask
 
     protected $title = 'Run Custom Product List actions.';
 
-    protected $description = 'Goes throught all the product custom lists and, for the ones that have an action, if they are current, runs that action.';
+    protected $description = 'Goes throught all the product custom lists actions and, if they are current, runs them.';
 
     private static $segment = 'run-custom-product-list-actions';
 
