@@ -90,9 +90,9 @@ class CustomProductListAction extends DataObject
     private static $summary_fields = [
         'Title' => 'Title',
         'StartDateTime.Nice' => 'Start',
-        'Started' => 'Started',
+        'Started.Nice' => 'Started',
         'StopDateTime.Nice' => 'Stop',
-        'Stopped' => 'Stopped',
+        'Stopped.Nice' => 'Stopped',
         'ProductCount' => 'Products',
     ];
 
@@ -176,11 +176,11 @@ class CustomProductListAction extends DataObject
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        foreach(['Started', 'Stopped'] as $readOnlyField) {
-            // $fields->replaceField(
-            //     $readOnlyField,
-            //     $fields->dataFieldByName($readOnlyField)->performReadonlyTransformation()
-            // );
+        foreach(['Title', 'Started', 'Stopped'] as $readOnlyField) {
+            $fields->replaceField(
+                $readOnlyField,
+                $fields->dataFieldByName($readOnlyField)->performReadonlyTransformation()
+            );
         }
 
         return $fields;
@@ -210,8 +210,15 @@ class CustomProductListAction extends DataObject
     protected function onBeforeWrite()
     {
         parent::onBeforeWrite();
-        if(! $this->Title) {
-            $this->Title = $this->i18n_singular_name() . ', from '.$this->StartDateTime . ', until '.$this->StopDateTime;
-        }
+        $this->Title = $this->calculateTitle();
     }
+
+    protected function calculateTitle() : string
+    {
+        return $this->i18n_singular_name() .
+            ', from '.date('d-m-Y', strtotime($this->StartDateTime)) .
+            ', until '.date('d-m-Y', strtotime($this->StopDateTime)).
+            ', on '.$this->getProductCount().' products';
+    }
+
 }

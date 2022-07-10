@@ -79,7 +79,8 @@ class CustomProductList extends DataObject
     ];
 
     private static $summary_fields = [
-        'FullName' => 'FullName',
+        'Title' => 'FullName',
+        'ProductCount' => 'Products',
         'Locked.Nice' => 'Locked',
     ];
 
@@ -94,13 +95,20 @@ class CustomProductList extends DataObject
 
     private static $casting = [
         'FullName' => 'Varchar',
+        'ProductCount' => 'Int',
     ];
 
 
     public function getFullName()
     {
-        return $this->Title . ' (' . $this->getProductsFromInternalItemIDs()->count() . ' products)';
+        return $this->Title . ' (' . $this->getProductCount() . ' products)';
     }
+
+    public function getProductCount() : int
+    {
+        return $this->getProductsFromInternalItemIDs()->count();
+    }
+
 
     /**
      * Deleting Permissions.
