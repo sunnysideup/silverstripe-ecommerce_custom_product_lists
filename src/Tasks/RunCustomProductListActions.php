@@ -3,13 +3,19 @@ namespace Sunnysideup\EcommerceCustomProductLists\Tasks;
 
 use SilverStripe\Dev\BuildTask;
 
+use SilverStripe\ORM\DB;
+
 use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
+use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction;
 
 class RunCustomProductListActions extends BuildTask
 {
+
     protected $title = 'Run Custom Product List actions.';
 
     protected $description = 'Goes throught all the product custom lists and, for the ones that have an action, if they are current, runs that action.';
+
+    private static $segment = 'run-custom-product-list-actions';
 
     protected $verbose = true;
 
@@ -21,14 +27,26 @@ class RunCustomProductListActions extends BuildTask
 
     public function run($request)
     {
-        $lists = CustomProductList::get_current_lists();
-        foreach($lists as $list) {
-            $action = $list->Action;
-            if($list->isValidAction()) {
-                $action::singleton();
-                $action->run($list);
+        $lists = [
+            'Start Actions' => CustomProductListAction::get_current_actions_to_start(),
+            'End Actions' => CustomProductListAction::get_current_actions_to_end(),
+        ];
+        foreach($lists as $title => $list) {
+            if($this->verbose) {
+                $this->outputMessage($title);
+            }
+            foreach($list as $runner) {
+                $outcome = $runner->RunNow();
+                $this->outputMessage(' . . . ' . $outcome);
             }
         }
+        $this->outputMessage('--- DONE ---');
+    }
 
+    protected function outputMessage(string $message)
+    {
+        if($this->verbose) {
+            DB::alteration_message($message);
+        }
     }
 }

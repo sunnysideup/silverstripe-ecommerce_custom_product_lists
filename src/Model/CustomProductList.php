@@ -18,7 +18,7 @@ use Sunnysideup\Ecommerce\Pages\ProductGroup;
 
 use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
 
-use Sunnysideup\EcommerceCustomProductLists\Api\AbstractCustomProductListAction;
+use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction;
 
 /**
  * 1. titles should not be identical
@@ -50,15 +50,9 @@ class CustomProductList extends DataObject
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
-        'FromDateTime' => 'DateTime',
-        'UntilDateTime' => 'DateTime',
-        'Action' => 'Varchar(255)',
     ];
 
     private static $indexes = [
-        'FromDateTime' => true,
-        'UntilDateTime' => true,
-        'Action' => true,
         'ProductListIndex' => [
             'type' => 'unique',
             'columns' => ['Title'],
@@ -68,6 +62,10 @@ class CustomProductList extends DataObject
     private static $many_many = [
         'ProductsToAdd' => Product::class,
         'ProductsToDelete' => Product::class,
+    ];
+
+    private static $belongs_many_many = [
+        'CustomProductListActions' => CustomProductListAction::class,
     ];
 
     private static $searchable_fields = [
@@ -94,50 +92,10 @@ class CustomProductList extends DataObject
         'FullName' => 'Varchar',
     ];
 
-    public static function get_current_lists()
-    {
-        $now = Date('Y-m-d h:i:s', strtotime('now'));
-        CustomProductList::get()
-            ->filter(
-                [
-                    'Action:not' => [null, ''],
-                    'FromDateTime:greaterThan' => $now,
-                    'UntilDateTime:lessThan' => $now,
-                ],
-            );
-    }
 
     public function getFullName()
     {
         return $this->Title . ' (' . $this->getProductsFromInternalItemIDs()->count() . ' products)';
-    }
-
-    /**
-     * has an action and dates are current
-     * @return bool
-     */
-    public function isCurrent() : bool
-    {
-        if($this->isValidAction()) {
-            $now = strtotime('now');
-            $from = strtotime($this->FromDateTime);
-            $until = strtotime($this->UntilDateTime);
-            return $from < $now && $until < $now;
-        }
-        return true;
-    }
-
-    public function isValidAction() : bool
-    {
-        return $this->Action && class_exists($this->Action) && $this instanceof AbstractCustomProductListAction;
-    }
-
-    public function RunNow()
-    {
-        $action = $this->Action;
-        if($this->this->isValidAction()) {
-            $action::singleton()->run($this);
-        }
     }
 
     /**
