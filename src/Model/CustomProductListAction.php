@@ -50,12 +50,14 @@ class CustomProductListAction extends DataObject
 
     public static function get_current_actions_to_start() : DataList
     {
+        // From, Now, Until
+        // ---F---N---U-----
         $now = self::get_now_string_for_database();
         return CustomProductListAction::get()
             ->filter(
                 [
-                    'FromDateTime:GreaterThan' => $now,
-                    'UntilDateTime:LessThan' => $now,
+                    'FromDateTime:LessThan' => $now,
+                    'UntilDateTime:GreaterThan' => $now,
                     'Started' => false,
                 ],
             );
@@ -63,11 +65,13 @@ class CustomProductListAction extends DataObject
 
     public static function get_current_actions_to_end() : DataList
     {
+        // From, Now, Until
+        // ---F------U---N---
         $now = self::get_now_string_for_database();
         return CustomProductListAction::get()
             ->filter(
                 [
-                    'UntilDateTime:GreaterThan' => $now,
+                    'UntilDateTime:LessThan' => $now,
                     'Ended' => false,
                 ],
             );
