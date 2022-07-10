@@ -2,9 +2,12 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\GridField\GridField;
+
+use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataList;
@@ -19,6 +22,7 @@ use Sunnysideup\Ecommerce\Pages\ProductGroup;
 use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
 
 use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction;
+
 
 /**
  * 1. titles should not be identical
@@ -166,6 +170,29 @@ class CustomProductList extends DataObject
                 $manualCodesField->setDescription(
                     'Separate codes by ' . $this->Config()->get('separator') . '.' .
                     ' Only use this option if products are not currently available on site.'
+                );
+            }
+        }
+
+        if($this->exists()) {
+            foreach(CustomProductListAction::get_list_of_action_types() as $className) {
+                $obj = $className::singleton();
+                $title = $className::singleton();
+                $fields->addFieldsToTab(
+                    'Root.Actions',
+                    [
+                        HeaderField::create(
+                            $title. ' Actions',
+                            $title. ' Actions',
+                            1
+                        ),
+                        GridField::create(
+                            'ListFor'.$title,
+                            $title,
+                            $className::get()->filter(['CustomProductLists.ID' => $this->ID]),
+                            GridFieldConfig_RecordViewer::create()
+                        )
+                    ]
                 );
             }
         }

@@ -33,19 +33,16 @@ class CustomProductListAction extends DataObject
 
     private static $table_name = 'CustomProductListAction';
 
+    private static $singular_name = 'Custom Product List Action - UNDEFINED';
+
+    private static $plural_name = 'Custom Product List Actions - UNDEFINED';
+
     /**
      * returns list of actions as array of ClassName => Title
      */
     public static function get_list_of_action_types() : array
     {
-        $classes = ClassInfo::subClassesFor(self::class, false);
-        $array = [];
-        foreach ($classes as $class) {
-            $obj = $class::singleton();
-            $array[$class] = $obj->getTitle();
-        }
-
-        return $array;
+        return ClassInfo::subClassesFor(self::class, false);
     }
 
     public static function get_current_actions_to_start() : DataList
@@ -79,9 +76,9 @@ class CustomProductListAction extends DataObject
 
     private static $db = [
         'Title' => 'Varchar',
-        'StartDateTime' => 'DateTime',
+        'StartDateTime' => 'Datetime',
         'Started' => 'Boolean',
-        'StopDateTime' => 'DateTime',
+        'StopDateTime' => 'Datetime',
         'Stopped' => 'Boolean',
         'RunNow' => 'Boolean',
     ];
@@ -135,21 +132,16 @@ class CustomProductListAction extends DataObject
         }
     }
 
-    public function getShortName() : string
-    {
-        user_error('Please extend this method: ' .__CLASS__.'::'  . __FUNCTION__);
-        return 'Error';
-    }
-
     public function runToStart() : bool
     {
         user_error('Please extend this method: ' .__CLASS__.'::'  . __FUNCTION__);
-        return false;
+        return true;
     }
+
     public function runToEnd() : bool
     {
         user_error('Please extend this method: ' .__CLASS__.'::'  . __FUNCTION__);
-        return false;
+        return true;
     }
 
     /**
@@ -184,28 +176,30 @@ class CustomProductListAction extends DataObject
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        foreach(['Started', 'Stopped'] as $readOnlyField)
-        $fields->replaceField(
-            $readOnlyField,
-            $this->dataFieldByName($readOnlyField)->performReadonlyTransformation()
-        );
+        foreach(['Started', 'Stopped'] as $readOnlyField) {
+            // $fields->replaceField(
+            //     $readOnlyField,
+            //     $fields->dataFieldByName($readOnlyField)->performReadonlyTransformation()
+            // );
+        }
+
         return $fields;
     }
 
     public function canEdit($member = null)
     {
-        return parent::canEdit($member);
         if($this->Started) {
             return false;
         }
+        return parent::canEdit($member);
     }
 
     public function canDelete($member = null)
     {
-        return parent::canDelete($member);
         if($this->Started) {
             return false;
         }
+        return parent::canDelete($member);
     }
 
     protected static function get_now_string_for_database(string $phrase = 'now') : string
@@ -217,7 +211,7 @@ class CustomProductListAction extends DataObject
     {
         parent::onBeforeWrite();
         if(! $this->Title) {
-            $this->Title = $this->getShortName() . ', from '.$this->StartDateTime . ', until '.$this->StopDateTime;
+            $this->Title = $this->i18n_singular_name() . ', from '.$this->StartDateTime . ', until '.$this->StopDateTime;
         }
     }
 }
