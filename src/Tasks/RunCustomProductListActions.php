@@ -36,7 +36,7 @@ class RunCustomProductListActions extends BuildTask
                 $this->outputMessage($title);
             }
             foreach($list as $runner) {
-                $outcome = $runner->RunNow();
+                $outcome = $runner->doRunNow();
                 $this->outputMessage(' . . . ' . $outcome);
             }
         }

@@ -5,6 +5,9 @@ namespace Sunnysideup\EcommerceCustomProductLists\Model;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
+
+use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataList;
@@ -121,15 +124,19 @@ class CustomProductListAction extends DataObject
         return $count;
     }
 
-    public function RunNow()
+    public function doRunNow() : string
     {
+        $action = 'No change';
         if($this->isRunStartNow()) {
             $this->Started = $this->runToStart();
             $this->write();
+            $action = 'Started';
         } elseif($this->isRunEndNow()) {
             $this->Ended = $this->runToEnd();
             $this->write();
+            $action = 'Stopped';
         }
+        return $this->Title .' ... '. $action;
     }
 
     public function runToStart() : bool
@@ -156,7 +163,7 @@ class CustomProductListAction extends DataObject
         $now = strtotime('now');
         $from = strtotime($this->StartDateTime);
         $until = strtotime($this->StopDateTime);
-        return $from > $now && $until < $now;
+        return $from < $now && $until > $now;
     }
     /**
      * has an action and dates are current
@@ -169,7 +176,7 @@ class CustomProductListAction extends DataObject
         }
         $now = strtotime('now');
         $until = strtotime($this->StopDateTime);
-        return  $until > $now;
+        return  $until < $now;
     }
 
 
@@ -182,6 +189,21 @@ class CustomProductListAction extends DataObject
                 $fields->dataFieldByName($readOnlyField)->performReadonlyTransformation()
             );
         }
+        $customListsGridField = $fields->dataFieldByName('CustomProductLists');
+        if($customListsGridField) {
+            $customListsGridField->getConfig()
+                ->getComponentByType(GridFieldAddExistingAutocompleter::class)
+                ->setSearchFields(['Title'])
+            ;
+        }
+
+        $fields->addFieldsToTab(
+            'Root.Main',
+            [
+                CheckboxField::create('IsRunNow', 'Should be started', $this->isRunStartNow())->performReadonlyTransformation(),
+                CheckboxField::create('isRunEndNow', 'Should be stopped', $this->isRunEndNow())->performReadonlyTransformation(),
+            ]
+        );
 
         return $fields;
     }
@@ -219,6 +241,16 @@ class CustomProductListAction extends DataObject
             ', from '.date('d-m-Y', strtotime($this->StartDateTime)) .
             ', until '.date('d-m-Y', strtotime($this->StopDateTime)).
             ', on '.$this->getProductCount().' products';
+    }
+
+    public function onAfterWrite()
+    {
+        parent::onAfterWrite();
+        if($this->RunNow) {
+            $this->doRunNow();
+            $this->RunNow = false;
+            $this->write();
+        }
     }
 
 }
