@@ -96,7 +96,7 @@ class CustomProductListAction extends DataObject
         'Started' => 'Started',
         'StopDateTime.Nice' => 'Stop',
         'Stopped' => 'Stopped',
-        'CustomProductLists.Count' => 'Lists',
+        'ProductCount' => 'Products',
     ];
 
     private static $casting = [
@@ -113,6 +113,16 @@ class CustomProductListAction extends DataObject
     private static $default_sort = [
         'ID' => 'DESC',
     ];
+
+    public function getProductCount() : int
+    {
+        $count = 0;
+        foreach($this->CustomProductLists() as $list) {
+            $count += $list->Products()->count();
+        }
+
+        return $count;
+    }
 
     public function RunNow()
     {
