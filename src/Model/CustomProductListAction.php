@@ -128,13 +128,6 @@ class CustomProductListAction extends DataObject
         return false;
     }
 
-    public function errorCheck()
-    {
-        if(strlen(static::class) > 255) {
-            user_error('Class Name for '.static::class.' is too long, please adjust');
-        }
-    }
-
     /**
      * has an action and dates are current
      * @return bool
