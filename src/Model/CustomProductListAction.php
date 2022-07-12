@@ -12,10 +12,15 @@ use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\ValidationResult;
 use SilverStripe\View\Parsers\URLSegmentFilter;
 use Sunnysideup\Ecommerce\Config\EcommerceConfig;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
+
+use Sunnysideup\CmsEditLinkField\Forms\Fields\CMSEditLinkField;
+
+use Sunnysideup\CMSNiceties\Forms\CMSNicetiesLinkButton;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
 
@@ -196,16 +201,41 @@ class CustomProductListAction extends DataObject
                 ->setSearchFields(['Title'])
             ;
         }
-
         $fields->addFieldsToTab(
-            'Root.Main',
+            'Root.CustomProductLists',
             [
-                CheckboxField::create('IsRunNow', 'Should be started', $this->isRunStartNow())->performReadonlyTransformation(),
-                CheckboxField::create('isRunEndNow', 'Should be stopped', $this->isRunEndNow())->performReadonlyTransformation(),
+                CMSNicetiesLinkButton::create(
+                    'LinkToCustomProducLists',
+                    'View lists',
+                    '/admin/product-config/Sunnysideup-EcommerceCustomProductLists-Model-CustomProductList'
+                )
             ]
         );
 
+        if($this->isValid()) {
+            $fields->addFieldsToTab(
+                'Root.Main',
+                [
+                    CheckboxField::create('IsRunNow', 'Should be started', $this->isRunStartNow())->performReadonlyTransformation(),
+                    CheckboxField::create('isRunEndNow', 'Should be stopped', $this->isRunEndNow())->performReadonlyTransformation(),
+                ]
+            );
+        } else {
+            $fields->removeByName(
+                ['Started', 'Stopped','RunNow']
+            );
+        }
+        $fields->dataFieldByName('StopDateTime')->setMinDatetime(date('Y-m-d'). '00:00:00');
         return $fields;
+    }
+
+    public function validate()
+    {
+        $result = parent::validate();
+        if(! $this->isValid()) {
+            $result->addError('Please check that dates are valid');
+        }
+        return $result;
     }
 
     public function canEdit($member = null)
@@ -241,6 +271,14 @@ class CustomProductListAction extends DataObject
             ', from '.date('d-m-Y', strtotime($this->StartDateTime)) .
             ', until '.date('d-m-Y', strtotime($this->StopDateTime)).
             ', on '.$this->getProductCount().' products';
+    }
+
+    protected function isValid() {
+        return
+            $this->StartDateTime &&
+            $this->StopDateTime &&
+            strtotime($this->StopDateTime) > strtotime('now') &&
+            strtotime($this->StartDateTime) < strtotime($this->StopDateTime);
     }
 
     public function onAfterWrite()

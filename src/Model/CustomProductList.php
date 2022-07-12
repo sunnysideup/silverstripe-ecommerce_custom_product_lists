@@ -185,7 +185,7 @@ class CustomProductList extends DataObject
         if($this->exists()) {
             foreach(CustomProductListAction::get_list_of_action_types() as $className) {
                 $obj = $className::singleton();
-                $title = $className::singleton();
+                $title = $obj->i18n_singular_name();
                 $fields->addFieldsToTab(
                     'Root.Actions',
                     [
@@ -204,6 +204,11 @@ class CustomProductList extends DataObject
                 );
             }
         }
+        $fields->removeByName(
+            [
+                'Root.CustomProductListActions', 'CustomProductListActions'
+            ]
+        );
 
         return $fields;
     }
