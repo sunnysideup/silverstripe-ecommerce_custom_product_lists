@@ -9,6 +9,7 @@ use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
@@ -83,12 +84,12 @@ class CustomProductListAction extends DataObject
     }
 
     private static $db = [
+        'RunNow' => 'Boolean',
         'Title' => 'Varchar',
         'StartDateTime' => 'Datetime',
         'Started' => 'Boolean',
         'StopDateTime' => 'Datetime',
         'Stopped' => 'Boolean',
-        'RunNow' => 'Boolean',
     ];
 
     private static $many_many = [
@@ -96,16 +97,19 @@ class CustomProductListAction extends DataObject
     ];
 
     private static $summary_fields = [
-        'Title' => 'Title',
+        'ShortTitle' => 'Title',
         'StartDateTime.Nice' => 'Start',
-        'Started.Nice' => 'Started',
         'StopDateTime.Nice' => 'Stop',
-        'Stopped.Nice' => 'Stopped',
+        'CustomProductListsNames' => 'Product lists',
         'ProductCount' => 'Products',
+        'Activated.Nice' => 'Active',
     ];
 
     private static $casting = [
+        'ShortTitle' => 'Varchar',
+        'Activated' => 'Boolean',
         'ProductCount' => 'Int',
+        'CustomProductListsNames' => 'Varchar',
     ];
 
     private static $indexes = [
@@ -119,6 +123,10 @@ class CustomProductListAction extends DataObject
         'ID' => 'DESC',
     ];
 
+    private static $field_labels = [
+        'RunNow' => 'Apply now (if this should be active, dont wait for automatic application; just apply it now)',
+    ];
+
     public function getProductCount() : int
     {
         $count = 0;
@@ -127,6 +135,11 @@ class CustomProductListAction extends DataObject
         }
 
         return $count;
+    }
+
+    public function getActivated() : int
+    {
+        return $this->Started && ! $this->Stopped;
     }
 
     public function doRunNow() : string
@@ -204,10 +217,9 @@ class CustomProductListAction extends DataObject
         $fields->addFieldsToTab(
             'Root.CustomProductLists',
             [
-                CMSNicetiesLinkButton::create(
+                LiteralField::create(
                     'LinkToCustomProducLists',
-                    'View lists',
-                    '/admin/product-config/Sunnysideup-EcommerceCustomProductLists-Model-CustomProductList'
+                    '<p><a href="/admin/product-config/Sunnysideup-EcommerceCustomProductLists-Model-CustomProductList">View all lists</a></p>'
                 )
             ]
         );
@@ -216,8 +228,20 @@ class CustomProductListAction extends DataObject
             $fields->addFieldsToTab(
                 'Root.Main',
                 [
+                    CheckboxField::create('Activated', 'Active', $this->getActivated())->performReadonlyTransformation()
+                        ->setDescription('We are in date range and action has been applied.'),
+                    NumericField::create('ProductCount', 'Products affected', $this->getProductCount())->performReadonlyTransformation(),
+                ],
+                'StartDateTime'
+            );
+            $fields->addFieldsToTab(
+                'Root.Debug',
+                [
                     CheckboxField::create('IsRunNow', 'Should be started', $this->isRunStartNow())->performReadonlyTransformation(),
                     CheckboxField::create('isRunEndNow', 'Should be stopped', $this->isRunEndNow())->performReadonlyTransformation(),
+                    $fields->dataFieldByName('Started'),
+                    $fields->dataFieldByName('Stopped'),
+                    $fields->dataFieldByName('RunNow'),
                 ]
             );
         } else {
@@ -225,6 +249,7 @@ class CustomProductListAction extends DataObject
                 ['Started', 'Stopped','RunNow']
             );
         }
+
         $fields->dataFieldByName('StopDateTime')->setMinDatetime(date('Y-m-d'). '00:00:00');
         return $fields;
     }
@@ -237,6 +262,19 @@ class CustomProductListAction extends DataObject
         }
         return $result;
     }
+
+    public function getShortTitle()
+    {
+        return 'Error';
+    }
+
+
+    public function getCustomProductListsNames()
+    {
+        return implode(', ', $this->CustomProductLists()->column('Title'));
+    }
+
+
 
     public function canEdit($member = null)
     {
@@ -263,6 +301,9 @@ class CustomProductListAction extends DataObject
     {
         parent::onBeforeWrite();
         $this->Title = $this->calculateTitle();
+        if($this->isValid()) {
+            $this->RunNow = true;
+        }
     }
 
     protected function calculateTitle() : string
@@ -281,10 +322,13 @@ class CustomProductListAction extends DataObject
             strtotime($this->StartDateTime) < strtotime($this->StopDateTime);
     }
 
+    protected $loopBuster = false;
+
     public function onAfterWrite()
     {
         parent::onAfterWrite();
-        if($this->RunNow) {
+        if($this->RunNow && $this->loopBuster === false) {
+            $this->loopBuster = true;
             $this->doRunNow();
             $this->RunNow = false;
             $this->write();
