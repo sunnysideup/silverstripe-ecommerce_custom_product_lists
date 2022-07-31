@@ -14,6 +14,8 @@ use SilverStripe\Forms\RequiredFields;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\ValidationResult;
+
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\View\Parsers\URLSegmentFilter;
 use Sunnysideup\Ecommerce\Config\EcommerceConfig;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
@@ -124,7 +126,7 @@ class CustomProductListAction extends DataObject
     ];
 
     private static $field_labels = [
-        'RunNow' => 'Apply now (if this should be active, dont wait for automatic application; just apply it now)',
+        'RunNow' => 'Apply start and stop on save rather than waiting for automatic application.',
     ];
 
     public function getProductCount() : int
@@ -201,6 +203,7 @@ class CustomProductListAction extends DataObject
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
+
         foreach(['Title', 'Started', 'Stopped'] as $readOnlyField) {
             $fields->replaceField(
                 $readOnlyField,
@@ -249,8 +252,25 @@ class CustomProductListAction extends DataObject
                 ['Started', 'Stopped','RunNow']
             );
         }
+        $nextDay = date('Y-m-d h:i:s', strtotime('+2 hours'));
+        $fields->dataFieldByName('StartDateTime')->setMinDatetime($nextDay);
+        $fields->dataFieldByName('StopDateTime')->setMinDatetime($nextDay);
 
-        $fields->dataFieldByName('StopDateTime')->setMinDatetime(date('Y-m-d'). '00:00:00');
+        if($this->Started) {
+            $fields->addFieldsToTab(
+                'Root.Main',
+                [
+                    LiteralField::create(
+                        'StartedWarning',
+                        '<p class="message warning">
+                            WARNING: this action has started.  Please do not delete or edit unless strictly necessary.
+                            To end early, please change stop date.
+                        </p>'
+                        )
+                ],
+                'Title'
+            );
+        }
         return $fields;
     }
 
@@ -258,7 +278,7 @@ class CustomProductListAction extends DataObject
     {
         $result = parent::validate();
         if(! $this->isValid()) {
-            $result->addError('Please check that dates are valid');
+            $result->addError('Please check all data entry has been completed correctly. Dates must be in the future. Start date before end date.  Complete all required fields.');
         }
         return $result;
     }
@@ -274,23 +294,6 @@ class CustomProductListAction extends DataObject
         return implode(', ', $this->CustomProductLists()->column('Title'));
     }
 
-
-
-    public function canEdit($member = null)
-    {
-        if($this->Started) {
-            return false;
-        }
-        return parent::canEdit($member);
-    }
-
-    public function canDelete($member = null)
-    {
-        if($this->Started) {
-            return false;
-        }
-        return parent::canDelete($member);
-    }
 
     protected static function get_now_string_for_database(string $phrase = 'now') : string
     {
@@ -318,7 +321,11 @@ class CustomProductListAction extends DataObject
         return
             $this->StartDateTime &&
             $this->StopDateTime &&
-            strtotime($this->StopDateTime) > strtotime('now') &&
+            (
+                (!$this->Started && strtotime($this->StartDateTime) > strtotime('now') )
+                ||
+                ($this->Started && strtotime($this->StopDateTime) > strtotime('now') )
+            ) &&
             strtotime($this->StartDateTime) < strtotime($this->StopDateTime);
     }
 
@@ -335,4 +342,12 @@ class CustomProductListAction extends DataObject
         }
     }
 
+
+    protected function addNextMonthsTimeSpan()
+    {
+        $this->StartDateTime = DBDatetime::now()->modify('00:01,first day of next month')->Rfc2822();
+        $this->StopDateTime = DBDatetime::now()->modify('23:59,last day of next month')->Rfc2822();
+
+        return parent::populateDefaults();
+    }
 }
