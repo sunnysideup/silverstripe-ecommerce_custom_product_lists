@@ -86,6 +86,7 @@ class CustomProductListAction extends DataObject
     }
 
     private static $db = [
+        'StartNow' => 'Boolean',
         'RunNow' => 'Boolean',
         'Title' => 'Varchar',
         'StartDateTime' => 'Datetime',
@@ -127,6 +128,7 @@ class CustomProductListAction extends DataObject
 
     private static $field_labels = [
         'RunNow' => 'Apply start and stop on save rather than waiting for automatic application.',
+        'StartNow' => 'Ignore start date, just apply now - careful!',
     ];
 
     public function getProductCount() : int
@@ -179,6 +181,9 @@ class CustomProductListAction extends DataObject
     {
         if($this->Started) {
             return false;
+        }
+        if($this->StartNow) {
+            return true;
         }
         $now = strtotime('now');
         $from = strtotime($this->StartDateTime);
@@ -245,6 +250,7 @@ class CustomProductListAction extends DataObject
                     $fields->dataFieldByName('Started'),
                     $fields->dataFieldByName('Stopped'),
                     $fields->dataFieldByName('RunNow'),
+                    $fields->dataFieldByName('StartNow'),
                 ]
             );
         } else {
