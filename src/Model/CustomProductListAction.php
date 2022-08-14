@@ -91,7 +91,7 @@ class CustomProductListAction extends DataObject
 
     private static $db = [
         'StartNow' => 'Boolean',
-        'RunNow' => 'Boolean',
+        'RunNow' => 'Boolean(1)',
         'Title' => 'Varchar',
         'StartDateTime' => 'Datetime',
         'Started' => 'Boolean',
@@ -186,7 +186,7 @@ class CustomProductListAction extends DataObject
         if($this->Started) {
             return false;
         }
-        if($this->StartNow) {
+        if($this->StartNow && !$this->Started) {
             return true;
         }
         $now = strtotime('now');
@@ -203,7 +203,7 @@ class CustomProductListAction extends DataObject
         if($this->Stopped) {
             return false;
         }
-        if($this->Started && $this->StartNow) {
+        if($this->Started && $this->StartNow && ! $this->Stopped) {
             return true;
         }
         $now = strtotime('now');
@@ -239,7 +239,7 @@ class CustomProductListAction extends DataObject
             ]
         );
 
-        if($this->isValid()) {
+        if($this->isReadyToBeActioned()) {
             $fields->addFieldsToTab(
                 'Root.Main',
                 [
@@ -279,6 +279,11 @@ class CustomProductListAction extends DataObject
                 ['Started', 'Stopped','RunNow', 'StartNow']
             );
         }
+        if($this->Stopped) {
+            $fields->removeByName(
+                ['RunNow', 'StartNow']
+            );
+        }
         $nextDay = date('Y-m-d h:i:s', strtotime('+2 hours'));
         $fields->dataFieldByName('StartDateTime')->setMinDatetime($nextDay);
         $fields->dataFieldByName('StopDateTime')->setMinDatetime($nextDay);
@@ -306,14 +311,15 @@ class CustomProductListAction extends DataObject
         }
 
 
+
         return $fields;
     }
 
     public function validate()
     {
         $result = parent::validate();
-        if(! $this->isValid()) {
-            $result->addError('Please check all data entry has been completed correctly. Dates must be in the future. Start date before end date.  Complete all required fields.');
+        if(! $this->isReadyToBeActioned()) {
+            $result->addError('Please check all required data entry has been completed correctly.');
         }
         return $result;
     }
@@ -339,9 +345,6 @@ class CustomProductListAction extends DataObject
     {
         parent::onBeforeWrite();
         $this->Title = $this->calculateTitle();
-        if($this->isValid()) {
-            $this->RunNow = true;
-        }
     }
 
     protected function calculateTitle() : string
@@ -374,15 +377,11 @@ class CustomProductListAction extends DataObject
         return $al;
     }
 
-    protected function isValid() {
+    protected function isReadyToBeActioned() :bool
+    {
         return
             $this->StartDateTime &&
             $this->StopDateTime &&
-            (
-                (!$this->Started && strtotime($this->StartDateTime) > strtotime('now') )
-                ||
-                ($this->Started && strtotime($this->StopDateTime) > strtotime('now') )
-            ) &&
             strtotime($this->StartDateTime) < strtotime($this->StopDateTime);
     }
 
@@ -391,7 +390,7 @@ class CustomProductListAction extends DataObject
     public function onAfterWrite()
     {
         parent::onAfterWrite();
-        if($this->RunNow && $this->loopBuster === false) {
+        if(($this->RunNow || $this->StartNow) && $this->loopBuster === false) {
             $this->loopBuster = true;
             $this->doRunNow();
             $this->RunNow = false;
@@ -408,4 +407,10 @@ class CustomProductListAction extends DataObject
 
         return parent::populateDefaults();
     }
+
+    public function canEdit($member = null)
+    {
+        return $this->Stopped ? false : parent::canEdit($member);
+    }
+
 }
