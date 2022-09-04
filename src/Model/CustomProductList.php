@@ -280,7 +280,15 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
             ++$count;
         }
-        $productsToAdd = $this->
+        foreach($this->AddFromCategories() as $category) {
+            $list = $category->getProducts();
+            if($list->exists()) {
+                $this->AddProductsToString($list);
+            }
+        }
+        if(! $this->KeepAddinFromCategories) {
+            $this->AddFromCategories()->removeAll();
+        }
     }
 
     protected function onAfterWrite()
