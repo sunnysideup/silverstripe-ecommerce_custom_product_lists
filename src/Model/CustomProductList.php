@@ -54,7 +54,7 @@ class CustomProductList extends DataObject
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
-        'KeepAddinFromCategories' => 'Boolean',
+        'KeepAddingFromCategories' => 'Boolean',
     ];
 
     private static $indexes = [
@@ -280,7 +280,17 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
             ++$count;
         }
-        $productsToAdd = $this->
+        if($this->AddFromCategories()->exists()) {
+            foreach($this->AddFromCategories() as $category) {
+                $list = $category->getProducts();
+                if($list->exists()) {
+                    $this->AddProductsToString($list);
+                }
+            }
+        }
+        if(! $this->KeepAddingFromCategories) {
+            $this->AddFromCategories()->removeAll();
+        }
     }
 
     protected function onAfterWrite()
