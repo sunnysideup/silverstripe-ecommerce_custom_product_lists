@@ -54,6 +54,7 @@ class CustomProductList extends DataObject
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
+        'RecalculateInclusions' => 'Boolean',
     ];
 
     private static $indexes = [
@@ -66,6 +67,7 @@ class CustomProductList extends DataObject
     private static $many_many = [
         'ProductsToAdd' => Product::class,
         'ProductsToDelete' => Product::class,
+        'CategoriesToAdd' => ProductGroup::class,
     ];
 
     private static $belongs_many_many = [
