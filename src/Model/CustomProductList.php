@@ -56,7 +56,7 @@ class CustomProductList extends DataObject
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
-        'KeepAddinFromCategories' => 'Boolean',
+        'KeepAddingFromCategories' => 'Boolean',
     ];
 
     private static $indexes = [
