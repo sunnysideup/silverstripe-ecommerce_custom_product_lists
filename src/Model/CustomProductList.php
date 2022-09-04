@@ -54,7 +54,7 @@ class CustomProductList extends DataObject
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
-        'RecalculateInclusions' => 'Boolean',
+        'KeepAddinFromCategories' => 'Boolean',
     ];
 
     private static $indexes = [
@@ -280,6 +280,7 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
             ++$count;
         }
+        $productsToAdd = $this->
     }
 
     protected function onAfterWrite()
