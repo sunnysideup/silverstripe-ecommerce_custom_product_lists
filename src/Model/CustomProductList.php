@@ -7,6 +7,8 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\GridField\GridField;
 
+use SilverStripe\Forms\CheckboxSetField;
+
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
@@ -54,7 +56,7 @@ class CustomProductList extends DataObject
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
-        'KeepAddingFromCategories' => 'Boolean',
+        'KeepAddinFromCategories' => 'Boolean',
     ];
 
     private static $indexes = [
@@ -205,6 +207,10 @@ class CustomProductList extends DataObject
                     ]
                 );
             }
+            $fields->addFieldsToTab(
+                'Root.CategoriesToAdd',
+                CheckboxSetField::create('CategoriesToAdd', 'Categories to add', ProductGroup::get()->map('ID', 'Breadcrumbs'))
+            );
         }
         $fields->removeByName(
             [
@@ -280,16 +286,16 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
             ++$count;
         }
-        if($this->AddFromCategories()->exists()) {
-            foreach($this->AddFromCategories() as $category) {
+        if($this->CategoriesToAdd()->exists()) {
+            foreach($this->CategoriesToAdd() as $category) {
                 $list = $category->getProducts();
                 if($list->exists()) {
                     $this->AddProductsToString($list);
                 }
             }
-        }
-        if(! $this->KeepAddingFromCategories) {
-            $this->AddFromCategories()->removeAll();
+            if(! $this->KeepAddingFromCategories) {
+                $this->CategoriesToAdd()->removeAll();
+            }
         }
     }
 
