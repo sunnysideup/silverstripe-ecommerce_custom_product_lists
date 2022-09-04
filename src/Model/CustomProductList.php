@@ -7,6 +7,10 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\GridField\GridField;
 
+use SilverStripe\Forms\TreeMultiselectField;
+
+use SilverStripe\Forms\CheckboxField;
+
 use SilverStripe\Forms\CheckboxSetField;
 
 use SilverStripe\Forms\HeaderField;
@@ -209,7 +213,14 @@ class CustomProductList extends DataObject
             }
             $fields->addFieldsToTab(
                 'Root.CategoriesToAdd',
-                CheckboxSetField::create('CategoriesToAdd', 'Categories to add', ProductGroup::get()->map('ID', 'Breadcrumbs'))
+                [
+                    CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories')
+                        ->setDescription('
+                            Everytime you save this list, we keep adding products from the categories you have selected below.
+                            If you do not tick this box then we add the products from the selected categories and remove the selected categories.'
+                        ),
+                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', ProductGroup::class)
+                ]
             );
         }
         $fields->removeByName(
