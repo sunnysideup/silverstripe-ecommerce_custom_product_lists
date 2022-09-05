@@ -29,6 +29,8 @@ use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
 
 use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction;
 
+use SilverStripe\CMS\Model\SiteTree;
+
 
 /**
  * 1. titles should not be identical
@@ -219,8 +221,9 @@ class CustomProductList extends DataObject
                             Everytime you save this list, we keep adding products from the categories you have selected below.
                             If you do not tick this box then we add the products from the selected categories and remove the selected categories.'
                         ),
-                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', ProductGroup::class)
-                ]
+                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class)
+                ],
+                'CategoriesToAdd'
             );
         }
         $fields->removeByName(
