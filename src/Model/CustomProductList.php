@@ -2,20 +2,16 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
-use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
+use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Forms\GridField\GridField;
-
-use SilverStripe\Forms\TreeMultiselectField;
-
 use SilverStripe\Forms\CheckboxField;
-
-use SilverStripe\Forms\CheckboxSetField;
-
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
+use SilverStripe\Forms\TreeMultiselectField;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\Parsers\URLSegmentFilter;
@@ -24,13 +20,6 @@ use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConf
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
-
-use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList;
-
-use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction;
-
-use SilverStripe\CMS\Model\SiteTree;
-
 
 /**
  * 1. titles should not be identical
@@ -108,17 +97,15 @@ class CustomProductList extends DataObject
         'ProductCount' => 'Int',
     ];
 
-
     public function getFullName()
     {
         return $this->Title . ' (' . $this->getProductCount() . ' products)';
     }
 
-    public function getProductCount() : int
+    public function getProductCount(): int
     {
         return $this->getProductsFromInternalItemIDs()->count();
     }
-
 
     /**
      * Deleting Permissions.
@@ -192,24 +179,24 @@ class CustomProductList extends DataObject
             }
         }
 
-        if($this->exists()) {
-            foreach(CustomProductListAction::get_list_of_action_types() as $className) {
+        if ($this->exists()) {
+            foreach (CustomProductListAction::get_list_of_action_types() as $className) {
                 $obj = $className::singleton();
                 $title = $obj->i18n_singular_name();
                 $fields->addFieldsToTab(
                     'Root.Actions',
                     [
                         HeaderField::create(
-                            $title. ' Actions',
-                            $title. ' Actions',
+                            $title . ' Actions',
+                            $title . ' Actions',
                             1
                         ),
                         GridField::create(
-                            'ListFor'.$title,
+                            'ListFor' . $title,
                             $title,
                             $className::get()->filter(['CustomProductLists.ID' => $this->ID]),
                             GridFieldConfig_RecordViewer::create()
-                        )
+                        ),
                     ]
                 );
             }
@@ -217,18 +204,19 @@ class CustomProductList extends DataObject
                 'Root.CategoriesToAdd',
                 [
                     CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories')
-                        ->setDescription('
+                        ->setDescription(
+                            '
                             Everytime you save this list, we keep adding products from the categories you have selected below.
                             If you do not tick this box then we add the products from the selected categories and remove the selected categories.'
                         ),
-                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class)
+                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class),
                 ],
                 'CategoriesToAdd'
             );
         }
         $fields->removeByName(
             [
-                'Root.CustomProductListActions', 'CustomProductListActions'
+                'Root.CustomProductListActions', 'CustomProductListActions',
             ]
         );
 
@@ -263,17 +251,12 @@ class CustomProductList extends DataObject
 
     /**
      * This is useful as a way to separate.
-     *
-     * @return \SilverStripe\ORM\DataList
      */
-    public function Products() : DataList
+    public function Products(): DataList
     {
         return $this->getProductsFromInternalItemIDs();
     }
 
-    /**
-     * @return \SilverStripe\ORM\DataList
-     */
     public function getProductsFromInternalItemIDs(): DataList
     {
         $className = EcommerceConfig::get(ProductGroup::class, 'base_buyable_class');
@@ -300,14 +283,14 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
             ++$count;
         }
-        if($this->CategoriesToAdd()->exists()) {
-            foreach($this->CategoriesToAdd() as $category) {
+        if ($this->CategoriesToAdd()->exists()) {
+            foreach ($this->CategoriesToAdd() as $category) {
                 $list = $category->getProducts();
-                if($list->exists()) {
+                if ($list->exists()) {
                     $this->AddProductsToString($list);
                 }
             }
-            if(! $this->KeepAddingFromCategories) {
+            if (! $this->KeepAddingFromCategories) {
                 $this->CategoriesToAdd()->removeAll();
             }
         }
@@ -331,6 +314,7 @@ class CustomProductList extends DataObject
         foreach ($products as $product) {
             $this->AddProductToString($product, $write);
         }
+
         return $this;
     }
 
@@ -346,6 +330,7 @@ class CustomProductList extends DataObject
         foreach ($array as $internalItemID) {
             $this->AddProductCodeToString($internalItemID, $write);
         }
+
         return $this;
     }
 
@@ -360,6 +345,7 @@ class CustomProductList extends DataObject
         foreach ($products as $product) {
             $this->RemoveProductFromString($product, $write);
         }
+
         return $this;
     }
 
@@ -376,6 +362,7 @@ class CustomProductList extends DataObject
         }
         $array[] = $product->InternalItemID;
         $this->setProductsFromArray($array, $write);
+
         return $this;
     }
 
@@ -393,6 +380,7 @@ class CustomProductList extends DataObject
         }
         $array[] = $internalItemID;
         $this->setProductsFromArray($array, $write);
+
         return $this;
     }
 
@@ -409,6 +397,7 @@ class CustomProductList extends DataObject
         }
         $array = array_diff($array, [$product->InternalItemID]);
         $this->setProductsFromArray($array, $write);
+
         return $this;
     }
 
@@ -441,7 +430,7 @@ class CustomProductList extends DataObject
         return $array;
     }
 
-    protected function defaultTitle() : string
+    protected function defaultTitle(): string
     {
         return _t(
             'CMSMain.NEWPAGE',
@@ -450,7 +439,7 @@ class CustomProductList extends DataObject
         . ($this->ID ? ' ' . $this->ID : '');
     }
 
-    protected function generateTitle() : string
+    protected function generateTitle(): string
     {
         $list = $this->Products();
         $title = $this->title;
@@ -477,6 +466,4 @@ class CustomProductList extends DataObject
             ->exists()
         ;
     }
-
-
 }
