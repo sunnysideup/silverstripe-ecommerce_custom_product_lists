@@ -190,8 +190,8 @@ class CustomProductListAction extends DataObject
             return true;
         }
         $now = strtotime('now');
-        $from = strtotime($this->StartDateTime);
-        $until = strtotime($this->StopDateTime);
+        $from = strtotime((string) $this->StartDateTime);
+        $until = strtotime((string) $this->StopDateTime);
         return $from < $now && $until > $now;
     }
     /**
@@ -207,7 +207,7 @@ class CustomProductListAction extends DataObject
             return true;
         }
         $now = strtotime('now');
-        $until = strtotime($this->StopDateTime);
+        $until = strtotime((string) $this->StopDateTime);
         return  $until < $now;
     }
 
@@ -350,8 +350,8 @@ class CustomProductListAction extends DataObject
     protected function calculateTitle() : string
     {
         return $this->i18n_singular_name() .
-            ', from '.date('d-m-Y', strtotime($this->StartDateTime)) .
-            ', until '.date('d-m-Y', strtotime($this->StopDateTime)).
+            ', from '.date('d-m-Y', strtotime((string) $this->StartDateTime)) .
+            ', until '.date('d-m-Y', strtotime((string) $this->StopDateTime)).
             ', on '.$this->getProductCount().' products';
     }
 
@@ -382,7 +382,7 @@ class CustomProductListAction extends DataObject
         return
             $this->StartDateTime &&
             $this->StopDateTime &&
-            strtotime($this->StartDateTime) < strtotime($this->StopDateTime);
+            strtotime((string) $this->StartDateTime) < strtotime((string) $this->StopDateTime);
     }
 
     protected $loopBuster = false;
