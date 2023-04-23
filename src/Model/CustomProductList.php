@@ -369,7 +369,7 @@ class CustomProductList extends DataObject
      * @param DataList $products
      * @param bool     $write    -should the dataobject be written?
      */
-    protected function RemoveProductsFromString($products, $write = false)
+    protected function RemoveProductsFromString(DataList $products, ?bool $write = false)
     {
         foreach ($products as $product) {
             $this->RemoveProductFromString($product, $write);
@@ -383,7 +383,7 @@ class CustomProductList extends DataObject
      *
      * @param bool $write -should the dataobject be written?
      */
-    protected function AddProductToString(Product $product, $write = false)
+    protected function AddProductToString(Product $product, ?bool $write = false)
     {
         $array = $this->getProductsAsInternalItemsArray();
         if (is_array($array) && in_array($product->InternalItemID, $array, true)) {
