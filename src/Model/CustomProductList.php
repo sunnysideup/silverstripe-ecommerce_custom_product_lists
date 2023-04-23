@@ -6,6 +6,7 @@ use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\CheckboxSetField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Forms\HeaderField;
@@ -52,6 +53,7 @@ class CustomProductList extends DataObject
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
         'KeepAddingFromCategories' => 'Boolean',
+        'KeepAddingFromCustomProductListsToAdd' => 'Boolean',
     ];
 
     private static $indexes = [
@@ -65,10 +67,12 @@ class CustomProductList extends DataObject
         'ProductsToAdd' => Product::class,
         'ProductsToDelete' => Product::class,
         'CategoriesToAdd' => ProductGroup::class,
+        'CustomProductListsToAdd' => CustomProductList::class,
     ];
 
     private static $belongs_many_many = [
         'CustomProductListActions' => CustomProductListAction::class,
+        'CustomProductListAddedTo' => CustomProductListAction::class,
     ];
 
     private static $searchable_fields = [
@@ -203,13 +207,28 @@ class CustomProductList extends DataObject
             $fields->addFieldsToTab(
                 'Root.CategoriesToAdd',
                 [
-                    CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories')
+                    CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories?')
                         ->setDescription(
                             '
                             Everytime you save this list, we keep adding products from the categories you have selected below.
                             If you do not tick this box then we add the products from the selected categories and remove the selected categories.'
                         ),
                     TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class),
+                ],
+                'CategoriesToAdd'
+            );
+
+            $fields->addFieldsToTab(
+                'Root.ListsToAdd',
+                [
+                    CheckboxField::create('KeepAddingFromCustomProductListsToAdd', 'Keep adding from other these other custom product lists to this one?')
+                        ->setDescription(
+                            '
+                            Everytime you save this list, we keep adding products from the categories other custom lists you have selected below.
+                            If you do not tick this box then we add the products from the selected other custom lists and remove the custom lists from here after we have added the products from them.'
+                        ),
+
+                    CheckboxSetField::create('CustomProductListsToAdd', 'Other custom lists to add to this one', CustomProductList::get()->exclude(['ID' => $this->ID])->map()),
                 ],
                 'CategoriesToAdd'
             );
@@ -286,6 +305,17 @@ class CustomProductList extends DataObject
         if ($this->CategoriesToAdd()->exists()) {
             foreach ($this->CategoriesToAdd() as $category) {
                 $list = $category->getProducts();
+                if ($list->exists()) {
+                    $this->AddProductsToString($list);
+                }
+            }
+            if (! $this->KeepAddingFromCategories) {
+                $this->CategoriesToAdd()->removeAll();
+            }
+        }
+        if ($this->CustomProductListsToAdd()->exists()) {
+            foreach ($this->CustomProductListsToAdd() as $customProductLists) {
+                $list = $customProductLists->Products();
                 if ($list->exists()) {
                     $this->AddProductsToString($list);
                 }
