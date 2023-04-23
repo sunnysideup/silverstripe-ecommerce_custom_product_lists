@@ -289,7 +289,7 @@ class CustomProductList extends DataObject
             //do nothing
         } else {
             $this->AddProductsToString($this->ProductsToAdd(), $write = false);
-            $this->AddProductCodesToString($this->InternalItemCodeListCustom, $write = false);
+            $this->AddProductCodesToString((string) $this->InternalItemCodeListCustom, $write = false);
             $this->RemoveProductsFromString($this->ProductsToDelete(), $write = false);
             $this->InternalItemCodeListCustom = '';
         }
@@ -348,12 +348,12 @@ class CustomProductList extends DataObject
     }
 
     /**
-     * add one product, using InternalItemID.
+     * add products, using comma separated InternalItemID string
      *
      * @param string $internalItemIDs
      * @param bool   $write           -should the dataobject be written?
      */
-    protected function AddProductCodesToString($internalItemIDs, $write = false)
+    public function AddProductCodesToString(string $internalItemIDs, ?bool $write = false)
     {
         $array = explode($this->Config()->get('separator'), $internalItemIDs);
         foreach ($array as $internalItemID) {
