@@ -217,7 +217,6 @@ class CustomProductList extends DataObject
                 ],
                 'CategoriesToAdd'
             );
-
             $fields->addFieldsToTab(
                 'Root.ListsToAdd',
                 [
@@ -257,7 +256,7 @@ class CustomProductList extends DataObject
     public function getProductsAsInternalItemsArray(): array
     {
         $sep = Config::inst()->get(CustomProductList::class, 'separator');
-        $list = explode($sep, $this->InternalItemCodeList);
+        $list = explode($sep, (string) $this->InternalItemCodeList);
         foreach ($list as $key => $code) {
             $list[$key] = trim($code);
         }
@@ -299,7 +298,7 @@ class CustomProductList extends DataObject
         // Ensure that this object has a non-conflicting Title value.
         $count = 2;
         while ($this->titleExists()) {
-            $this->Title = preg_replace('#-\d+$#', null, $this->Title) . '-' . $count;
+            $this->Title = preg_replace('#-\d+$#', '', $this->Title) . '-' . $count;
             ++$count;
         }
         if ($this->CategoriesToAdd()->exists()) {
@@ -320,8 +319,8 @@ class CustomProductList extends DataObject
                     $this->AddProductsToString($list);
                 }
             }
-            if (! $this->KeepAddingFromCategories) {
-                $this->CategoriesToAdd()->removeAll();
+            if (! $this->KeepAddingFromCustomProductListsToAdd) {
+                $this->CustomProductListsToAdd()->removeAll();
             }
         }
     }
