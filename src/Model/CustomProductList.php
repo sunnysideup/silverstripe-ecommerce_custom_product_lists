@@ -27,7 +27,22 @@ use Sunnysideup\Ecommerce\Pages\ProductGroup;
  * 2. when copying accross, we have to make sure
  * 3. onAfterWrite, do we add products from InternalItemCodeList?
  * 4. How can we remove products?
- */
+ *
+ * @property bool $HideFromWebsite
+ * @property bool $UseForGoogleFeed
+ * @property string $Title
+ * @property bool $Locked
+ * @property string $InternalItemCodeList
+ * @property string $InternalItemCodeListCustom
+ * @property bool $KeepAddingFromCategories
+ * @property bool $KeepAddingFromCustomProductListsToAdd
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\Ecommerce\Pages\Product[] ProductsToAdd()
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\Ecommerce\Pages\Product[] ProductsToDelete()
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\Ecommerce\Pages\ProductGroup[] CategoriesToAdd()
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList[] CustomProductListsToAdd()
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction[] CustomProductListActions()
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction[] CustomProductListAddedTo()
+  */
 class CustomProductList extends DataObject
 {
     /**

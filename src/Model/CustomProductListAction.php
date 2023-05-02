@@ -19,6 +19,15 @@ use SilverStripe\ORM\FieldType\DBField;
  * 2. when copying accross, we have to make sure
  * 3. onAfterWrite, do we add products from InternalItemCodeList?
  * 4. How can we remove products?
+ *
+ * @property bool $StartNow
+ * @property bool $RunNow
+ * @property string $Title
+ * @property string $StartDateTime
+ * @property bool $Started
+ * @property string $StopDateTime
+ * @property bool $Stopped
+ * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList[] CustomProductLists()
  */
 class CustomProductListAction extends DataObject
 {
