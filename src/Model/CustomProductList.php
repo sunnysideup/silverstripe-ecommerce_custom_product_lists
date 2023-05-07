@@ -297,16 +297,20 @@ class CustomProductList extends DataObject
         return $className::get()->filter(['InternalItemID' => $this->getProductsAsInternalItemsArray()]);
     }
 
+    protected $writeAgain = false;
+
     protected function onBeforeWrite()
     {
         parent::onBeforeWrite();
         if ($this->Locked) {
             //do nothing
-        } else {
+        } elseif($this->exists()) {
             $this->AddProductsToString($this->ProductsToAdd(), $write = false);
             $this->AddProductCodesToString((string) $this->InternalItemCodeListCustom, $write = false);
             $this->RemoveProductsFromString($this->ProductsToDelete(), $write = false);
             $this->InternalItemCodeListCustom = '';
+        } else {
+            $this->writeAgain = true;
         }
         // If there is no Title set, generate one from Title
         $this->Title = $this->generateTitle();
@@ -345,6 +349,10 @@ class CustomProductList extends DataObject
         parent::onAfterWrite();
         $this->ProductsToAdd()->removeAll();
         $this->ProductsToDelete()->removeAll();
+        if($this->writeAgain) {
+            $this->writeAgain = false;
+            $this->write();
+        }
     }
 
     /**

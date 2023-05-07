@@ -62,6 +62,11 @@ class CustomProductListAction extends DataObject
         'Activated.Nice' => 'Active',
     ];
 
+    private static $searchable_fields = [
+        'ShortTitle' => 'PartialMatchFilter',
+        'CustomProductListsNames' => 'PartialMatchFilter',
+    ];
+
     private static $casting = [
         'ShortTitle' => 'Varchar',
         'Activated' => 'Boolean',
@@ -136,9 +141,10 @@ class CustomProductListAction extends DataObject
         return $count;
     }
 
-    public function getActivated(): int
+    public function getActivated()
     {
-        return $this->Started && ! $this->Stopped;
+        $val = $this->Started && ! $this->Stopped;
+        return DBField::create_field('Boolean', $val);
     }
 
     public function doRunNow(): string
