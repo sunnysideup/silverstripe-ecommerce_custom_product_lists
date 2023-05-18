@@ -51,6 +51,7 @@ class CustomProductList extends DataObject
      * @var string
      */
     private static $separator = ',';
+    private static $separator_name = 'comma';
 
     /**
      * if a product separator is used in the product code then
@@ -82,6 +83,7 @@ class CustomProductList extends DataObject
         'ProductsToAdd' => Product::class,
         'ProductsToDelete' => Product::class,
         'CategoriesToAdd' => ProductGroup::class,
+        'MustAlsoBeInCategories' => ProductGroup::class,
         'CustomProductListsToAdd' => CustomProductList::class,
     ];
 
@@ -141,6 +143,20 @@ class CustomProductList extends DataObject
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
+        if($this->exists()) {
+            $fields->fieldByName('Root.ProductsToAdd')->setTitle('Products to add to this list');
+            $fields->fieldByName('Root.ProductsToDelete')->setTitle('Products to remove from this list');
+        }
+
+        $fields->removeFieldsFromTab(
+            'Root',
+            [
+                'MustAlsoBeInCategories',
+                'CategoriesToAdd',
+                'CustomProductListsToAdd',
+                // 'CustomProductListAddedTo',
+            ]
+        );
         $html =
         '<div id="Form_ItemEditForm_InternalItemCodeList_Holder" class="field readonly textarea">
            <label class="left" for="Form_ItemEditForm_InternalItemCodeList">Included Codes</label>
@@ -150,8 +166,7 @@ class CustomProductList extends DataObject
                 </span>
               </div>
               <label class="right" for="Form_ItemEditForm_InternalItemCodeList">
-                  This is the <strong>master list</strong><br>
-                  Separate codes by ' . $this->Config()->get('separator') . '
+                  This is the <strong>master list</strong>
               </label>
         </div>
         ';
@@ -192,10 +207,44 @@ class CustomProductList extends DataObject
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
-                    'Separate codes by ' . $this->Config()->get('separator') . '.' .
-                    ' Only use this option if products are not currently available on site.'
+                    'Separate codes by ' . $this->Config()->get('separator') . ' ('.$this->Config()->get('separator_name').').' .
+                    '
+                        Only use this option if products are not currently available on site.
+                        If they are already part of the site then you can add them using the tools provided.
+                    '
+                );
+                $fields->addFieldsToTab(
+                    'Root.AddUnlistedProductsToList',
+                    [
+                        $manualCodesField,
+                    ]
                 );
             }
+            $fields->addFieldsToTab(
+                'Root.ProductsToAdd',
+                [
+                    HeaderField::create('ProductsToAddFromCategories', 'Products to add from Categories', 1),
+                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class)
+                        ->setDescription('All products in selected categories will be added. Make sure to select a category.'),
+                    TreeMultiselectField::create('MustAlsoBeInCategories', 'Products must also be included in', SiteTree::class)
+                        ->setDescription('For the categories selected above, the products must also be in the categories listed here.'),
+                    CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories?')
+                        ->setDescription(
+                            '
+                            Everytime you save this list, we keep adding products from the categories you have selected below.
+                            If you do not tick this box then we add the products from the selected categories only once - if ticked, everytime you save, we will try to keep adding more products from your selection.'
+                        ),
+                    HeaderField::create('ProductsToAddFromOtherCustomLists', 'Products to add from Other Custom Lists', 1),
+                    CheckboxSetField::create('CustomProductListsToAdd', 'Other custom lists to add to this one', CustomProductList::get()->exclude(['ID' => $this->ID])->map()),
+                    CheckboxField::create('KeepAddingFromCustomProductListsToAdd', 'Keep adding from other custom product lists?')
+                        ->setDescription(
+                            '
+                            Everytime you save this list, we keep adding products from the other custom lists you have selected below.
+                            If you do not tick this box then we add the products from the selected custom lists only once - if ticked, everytime you save, we will try to keep adding more products from your selection.'
+                        ),
+
+                ],
+            );
         }
 
         if ($this->exists()) {
@@ -219,39 +268,33 @@ class CustomProductList extends DataObject
                     ]
                 );
             }
-            $fields->addFieldsToTab(
-                'Root.CategoriesToAdd',
-                [
-                    CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories?')
-                        ->setDescription(
-                            '
-                            Everytime you save this list, we keep adding products from the categories you have selected below.
-                            If you do not tick this box then we add the products from the selected categories and remove the selected categories.'
-                        ),
-                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class),
-                ],
-                'CategoriesToAdd'
-            );
-            $fields->addFieldsToTab(
-                'Root.ListsToAdd',
-                [
-                    CheckboxField::create('KeepAddingFromCustomProductListsToAdd', 'Keep adding from other these other custom product lists to this one?')
-                        ->setDescription(
-                            '
-                            Everytime you save this list, we keep adding products from the categories other custom lists you have selected below.
-                            If you do not tick this box then we add the products from the selected other custom lists and remove the custom lists from here after we have added the products from them.'
-                        ),
-
-                    CheckboxSetField::create('CustomProductListsToAdd', 'Other custom lists to add to this one', CustomProductList::get()->exclude(['ID' => $this->ID])->map()),
-                ],
-                'CategoriesToAdd'
-            );
         }
-        $fields->removeByName(
-            [
-                'Root.CustomProductListActions', 'CustomProductListActions',
-            ]
-        );
+        if($this->exists()) {
+            $fields->removeByName(
+                [
+                    'Root.CustomProductListActions', 'CustomProductListActions',
+                ]
+            );
+            $fields->removeFieldsFromTab(
+                'Root',
+                [
+                    'CustomProductListAddedTo',
+                ]
+            );
+            if(! $this->Locked) {
+                $fields->addFieldsToTab(
+                    'Root.ProductsToAdd',
+                    [
+                        GridField::create(
+                            'CustomProductListAddedTo',
+                            'This custom lists adds products to the following other custom lists',
+                            $this->CustomProductListAddedTo(),
+                            GridFieldConfig_RecordViewer::create()
+                        )
+                    ],
+                );
+            }
+        }
 
         return $fields;
     }
@@ -320,10 +363,39 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', '', $this->Title) . '-' . $count;
             ++$count;
         }
+        if (! $this->Locked) {
+            $this->addProductsFromCategories();
+            $this->addProductsFromOtherLists();
+        }
+    }
+
+    protected function addProductsFromCategories()
+    {
         if ($this->CategoriesToAdd()->exists()) {
+            $arrayToAdd = [];
             foreach ($this->CategoriesToAdd() as $category) {
-                $list = $category->getProducts();
-                if ($list->exists()) {
+                if($category instanceof ProductGroup) {
+                    $list = $category->getProducts();
+                    if ($list->exists()) {
+                        $arrayToAdd = array_merge($arrayToAdd, $category->getProducts()->columnUnique());
+                    }
+                }
+            }
+            if($this->MustAlsoBeInCategories()->exists()) {
+                $mustAlsoBeIn = [];
+                foreach ($this->MustAlsoBeInCategories() as $category) {
+                    if($category instanceof ProductGroup) {
+                        $list = $category->getProducts();
+                        if ($list->exists()) {
+                            $mustAlsoBeIn = array_merge($mustAlsoBeIn, $category->getProducts()->columnUnique());
+                        }
+                    }
+                }
+                $arrayToAdd = array_intersect($arrayToAdd, $mustAlsoBeIn);
+            }
+            if(count($arrayToAdd)) {
+                $list = Product::get()->filter(['ID' => $arrayToAdd]);
+                if($list->exists()) {
                     $this->AddProductsToString($list);
                 }
             }
@@ -331,6 +403,10 @@ class CustomProductList extends DataObject
                 $this->CategoriesToAdd()->removeAll();
             }
         }
+    }
+
+    protected function addProductsFromOtherLists()
+    {
         if ($this->CustomProductListsToAdd()->exists()) {
             foreach ($this->CustomProductListsToAdd() as $customProductLists) {
                 $list = $customProductLists->Products();
@@ -363,6 +439,7 @@ class CustomProductList extends DataObject
      */
     protected function AddProductsToString($products, ?bool $write = false)
     {
+        /** @var Product $product */
         foreach ($products as $product) {
             $this->AddProductToString($product, $write);
         }
@@ -394,6 +471,7 @@ class CustomProductList extends DataObject
      */
     protected function RemoveProductsFromString(DataList $products, ?bool $write = false)
     {
+        /** @var Product $product */
         foreach ($products as $product) {
             $this->RemoveProductFromString($product, $write);
         }
@@ -494,7 +572,7 @@ class CustomProductList extends DataObject
     protected function generateTitle(): string
     {
         $list = $this->Products();
-        $title = $this->title;
+        $title = $this->Title;
         if (! $title) {
             $title = ($list->exists() ? implode('; ', $list->column('Title')) : $this->defaultTitle());
         }
