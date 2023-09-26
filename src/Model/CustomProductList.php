@@ -316,7 +316,7 @@ class CustomProductList extends DataObject
         $sep = Config::inst()->get(CustomProductList::class, 'separator');
         $list = explode($sep, (string) $this->InternalItemCodeList);
         foreach ($list as $key => $code) {
-            $list[$key] = trim($code);
+            $list[$key] = trim((string) $code);
         }
         if (! is_array($list)) {
             $list = [];
@@ -540,7 +540,7 @@ class CustomProductList extends DataObject
         $alt = Config::inst()->get(CustomProductList::class, 'separator_alternative');
         foreach ($array as $key => $value) {
             if ($value) {
-                $value = trim($value);
+                $value = trim((string) $value);
                 $value = str_replace($sep, $alt, $value);
                 if ($value) {
                     $array[$key] = $value;

@@ -375,7 +375,7 @@ class CustomProductListAction extends DataObject
 
     protected static function get_now_string_for_database(string $phrase = 'now'): string
     {
-        return date('Y-m-d H:i:s', strtotime($phrase));
+        return date('Y-m-d H:i:s', strtotime((string) $phrase));
     }
 
     protected function onBeforeWrite()
