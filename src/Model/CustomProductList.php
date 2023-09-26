@@ -360,7 +360,7 @@ class CustomProductList extends DataObject
         // Ensure that this object has a non-conflicting Title value.
         $count = 2;
         while ($this->titleExists()) {
-            $this->Title = preg_replace('#-\d+$#', '', $this->Title) . '-' . $count;
+            $this->Title = preg_replace('#-\d+$#', '', (string) $this->Title) . '-' . $count;
             ++$count;
         }
         if (! $this->Locked) {
