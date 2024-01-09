@@ -99,6 +99,8 @@ class CustomProductList extends DataObject
     ];
 
     private static $summary_fields = [
+        'Created.Nice' => 'Created',
+        'LastEdited.Ago' => 'Last Edited',
         'Title' => 'FullName',
         'ProductCount' => 'Products',
         'Locked.Nice' => 'Locked',
@@ -107,6 +109,7 @@ class CustomProductList extends DataObject
     private static $field_labels = [
         'InternalItemCodeList' => 'Included Codes',
         'InternalItemCodeListCustom' => 'Manually added codes',
+        'ProductsToDelete' => 'Remove Products from List',
     ];
 
     private static $default_sort = [
@@ -207,7 +210,7 @@ class CustomProductList extends DataObject
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
-                    'Separate codes by ' . $this->Config()->get('separator') . ' ('.$this->Config()->get('separator_name').').' .
+                    'Separate codes by ' . $this->Config()->get('separator') . ' (' . $this->Config()->get('separator_name') . ').' .
                     '
                         Only use this option if products are not currently available on site.
                         If they are already part of the site then you can add them using the tools provided.
@@ -281,7 +284,7 @@ class CustomProductList extends DataObject
                     'CustomProductListAddedTo',
                 ]
             );
-            if(! $this->Locked) {
+            if(!$this->Locked) {
                 $fields->addFieldsToTab(
                     'Root.ProductsToAdd',
                     [
@@ -318,7 +321,7 @@ class CustomProductList extends DataObject
         foreach ($list as $key => $code) {
             $list[$key] = trim((string) $code);
         }
-        if (! is_array($list)) {
+        if (!is_array($list)) {
             $list = [];
         }
 
@@ -363,7 +366,7 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', '', (string) $this->Title) . '-' . $count;
             ++$count;
         }
-        if (! $this->Locked) {
+        if (!$this->Locked) {
             $this->addProductsFromCategories();
             $this->addProductsFromOtherLists();
         }
@@ -399,7 +402,7 @@ class CustomProductList extends DataObject
                     $this->AddProductsToString($list);
                 }
             }
-            if (! $this->KeepAddingFromCategories) {
+            if (!$this->KeepAddingFromCategories) {
                 $this->CategoriesToAdd()->removeAll();
             }
         }
@@ -414,7 +417,7 @@ class CustomProductList extends DataObject
                     $this->AddProductsToString($list);
                 }
             }
-            if (! $this->KeepAddingFromCustomProductListsToAdd) {
+            if (!$this->KeepAddingFromCustomProductListsToAdd) {
                 $this->CustomProductListsToAdd()->removeAll();
             }
         }
@@ -522,7 +525,7 @@ class CustomProductList extends DataObject
     protected function RemoveProductFromString(Product $product, $write = false)
     {
         $array = $this->getProductsAsInternalItemsArray();
-        if (! in_array($product->InternalItemID, $array, true)) {
+        if (!in_array($product->InternalItemID, $array, true)) {
             return;
         }
         $array = array_diff($array, [$product->InternalItemID]);
@@ -573,14 +576,14 @@ class CustomProductList extends DataObject
     {
         $list = $this->Products();
         $title = $this->Title;
-        if (! $title) {
+        if (!$title) {
             $title = ($list->exists() ? implode('; ', $list->column('Title')) : $this->defaultTitle());
         }
         $filter = URLSegmentFilter::create();
         $title = $filter->filter($title);
 
         // Fallback to generic page name if path is empty (= no valid, convertable characters)
-        if (! $title || '-' === $title || '-1' === $title) {
+        if (!$title || '-' === $title || '-1' === $title) {
             $title = $this->defaultTitle();
         }
 
