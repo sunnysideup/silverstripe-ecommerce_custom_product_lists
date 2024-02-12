@@ -59,7 +59,7 @@ class CustomProductListAction extends DataObject
         'StopDateTime.Nice' => 'Stop',
         'CustomProductListsNames' => 'Product lists',
         'ProductCount' => 'Products',
-        'Activated.Nice' => 'Active',
+        'Activated.NiceAndColourfull' => 'Active',
     ];
 
     private static $searchable_fields = [

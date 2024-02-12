@@ -103,7 +103,7 @@ class CustomProductList extends DataObject
         'LastEdited.Ago' => 'Last Edited',
         'Title' => 'FullName',
         'ProductCount' => 'Products',
-        'Locked.Nice' => 'Locked',
+        'Locked.NiceAndColourfull' => 'Locked',
     ];
 
     private static $field_labels = [
