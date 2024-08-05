@@ -134,6 +134,7 @@ class CustomProductListAction extends DataObject
     public function getProductCount(): int
     {
         $count = 0;
+        /** @var DataList[CustomProductList] $list */
         foreach ($this->CustomProductLists() as $list) {
             $count += $list->Products()->count();
         }
@@ -337,6 +338,7 @@ class CustomProductListAction extends DataObject
     public function getAllProducts(): array
     {
         $list = [];
+        /** @var DataList[CustomProductList] $customList */
         foreach ($this->CustomProductLists() as $customList) {
             foreach ($customList->Products() as $product) {
                 $list[$product->ID] = $product;
@@ -356,7 +358,7 @@ class CustomProductListAction extends DataObject
         return $al;
     }
 
-    public function onAfterWrite()
+    protected function onAfterWrite()
     {
         parent::onAfterWrite();
         if (($this->RunNow || $this->StartNow) && false === $this->loopBuster) {
