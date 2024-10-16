@@ -146,7 +146,7 @@ class CustomProductList extends DataObject
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        if($this->exists()) {
+        if ($this->exists()) {
             $fields->fieldByName('Root.ProductsToAdd')->setTitle('Products to add to this list');
             $fields->fieldByName('Root.ProductsToDelete')->setTitle('Products to remove from this list');
         }
@@ -272,7 +272,7 @@ class CustomProductList extends DataObject
                 );
             }
         }
-        if($this->exists()) {
+        if ($this->exists()) {
             $fields->removeByName(
                 [
                     'Root.CustomProductListActions', 'CustomProductListActions',
@@ -284,7 +284,7 @@ class CustomProductList extends DataObject
                     'CustomProductListAddedTo',
                 ]
             );
-            if(!$this->Locked) {
+            if (!$this->Locked) {
                 $fields->addFieldsToTab(
                     'Root.ProductsToAdd',
                     [
@@ -350,7 +350,7 @@ class CustomProductList extends DataObject
         parent::onBeforeWrite();
         if ($this->Locked) {
             //do nothing
-        } elseif($this->exists()) {
+        } elseif ($this->exists()) {
             $this->AddProductsToString($this->ProductsToAdd(), $write = false);
             $this->AddProductCodesToString((string) $this->InternalItemCodeListCustom, $write = false);
             $this->RemoveProductsFromString($this->ProductsToDelete(), $write = false);
@@ -377,17 +377,17 @@ class CustomProductList extends DataObject
         if ($this->CategoriesToAdd()->exists()) {
             $arrayToAdd = [];
             foreach ($this->CategoriesToAdd() as $category) {
-                if($category instanceof ProductGroup) {
+                if ($category instanceof ProductGroup) {
                     $list = $category->getProducts();
                     if ($list->exists()) {
                         $arrayToAdd = array_merge($arrayToAdd, $category->getProducts()->columnUnique());
                     }
                 }
             }
-            if($this->MustAlsoBeInCategories()->exists()) {
+            if ($this->MustAlsoBeInCategories()->exists()) {
                 $mustAlsoBeIn = [];
                 foreach ($this->MustAlsoBeInCategories() as $category) {
-                    if($category instanceof ProductGroup) {
+                    if ($category instanceof ProductGroup) {
                         $list = $category->getProducts();
                         if ($list->exists()) {
                             $mustAlsoBeIn = array_merge($mustAlsoBeIn, $category->getProducts()->columnUnique());
@@ -396,9 +396,9 @@ class CustomProductList extends DataObject
                 }
                 $arrayToAdd = array_intersect($arrayToAdd, $mustAlsoBeIn);
             }
-            if(count($arrayToAdd)) {
+            if (count($arrayToAdd)) {
                 $list = Product::get()->filter(['ID' => $arrayToAdd]);
-                if($list->exists()) {
+                if ($list->exists()) {
                     $this->AddProductsToString($list);
                 }
             }
@@ -411,6 +411,7 @@ class CustomProductList extends DataObject
     protected function addProductsFromOtherLists()
     {
         if ($this->CustomProductListsToAdd()->exists()) {
+            /** @var DataList $customProductLists */
             foreach ($this->CustomProductListsToAdd() as $customProductLists) {
                 $list = $customProductLists->Products();
                 if ($list->exists()) {
@@ -428,7 +429,7 @@ class CustomProductList extends DataObject
         parent::onAfterWrite();
         $this->ProductsToAdd()->removeAll();
         $this->ProductsToDelete()->removeAll();
-        if($this->writeAgain) {
+        if ($this->writeAgain) {
             $this->writeAgain = false;
             $this->write();
         }
