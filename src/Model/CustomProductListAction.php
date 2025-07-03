@@ -134,7 +134,7 @@ class CustomProductListAction extends DataObject
     public function getProductCount(): int
     {
         $count = 0;
-        /** @var DataList[CustomProductList] $list */
+        /** @var DataList $list */
         foreach ($this->CustomProductLists() as $list) {
             $count += $list->Products()->count();
         }
@@ -338,7 +338,7 @@ class CustomProductListAction extends DataObject
     public function getAllProducts(): array
     {
         $list = [];
-        /** @var DataList[CustomProductList] $customList */
+        /** @var DataList $customList */
         foreach ($this->CustomProductLists() as $customList) {
             foreach ($customList->Products() as $product) {
                 $list[$product->ID] = $product;
