@@ -145,7 +145,6 @@ class CustomProductListAction extends DataObject
     public function getActivated()
     {
         $val = (bool) $this->Started === true && (bool) $this->Stopped === false;
-        $val = false;
         return DBField::create_field('Boolean', $val);
     }
 
