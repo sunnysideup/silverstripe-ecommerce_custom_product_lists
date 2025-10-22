@@ -144,8 +144,14 @@ class CustomProductListAction extends DataObject
 
     public function getActivated()
     {
-        $val = $this->Started && ! $this->Stopped;
+        $val = (bool) $this->Started === true && (bool) $this->Stopped === false;
+        $val = false;
         return DBField::create_field('Boolean', $val);
+    }
+
+    public function getActivatedNotNice()
+    {
+        return (bool) $this->Started === true && (bool) $this->Stopped === false;
     }
 
     public function doRunNow(): string
@@ -244,7 +250,7 @@ class CustomProductListAction extends DataObject
             $fields->addFieldsToTab(
                 'Root.Main',
                 [
-                    CheckboxField::create('Activated', 'Active', $this->getActivated())->performReadonlyTransformation()
+                    CheckboxField::create('ActivatedNotNice', 'Active', $this->getActivatedNotNice())->performReadonlyTransformation()
                         ->setDescription('We are in date range and action has been applied.'),
                     NumericField::create('ProductCount', 'Products affected', $this->getProductCount())->performReadonlyTransformation(),
                 ],
