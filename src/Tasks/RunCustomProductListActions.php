@@ -23,6 +23,8 @@ class RunCustomProductListActions extends BuildTask
         return $this;
     }
 
+    protected array $messages = [];
+
     public function run($request)
     {
         $lists = [
@@ -30,21 +32,26 @@ class RunCustomProductListActions extends BuildTask
             'End Actions' => CustomProductListAction::get_current_actions_to_end(),
         ];
         foreach ($lists as $title => $list) {
-            if ($this->verbose) {
-                $this->outputMessage($title);
-            }
+            $this->outputMessage($title);
             foreach ($list as $runner) {
-                $outcome = $runner->doRunNow();
-                $this->outputMessage(' . . . ' . $outcome);
+                $messages = $runner->doRunNow();
+                foreach ($messages as $message) {
+                    $this->outputMessage('    ' . $message);
+                }
             }
         }
         $this->outputMessage('--- DONE ---');
+        if (! $this->verbose) {
+            return $this->messages;
+        }
     }
 
     protected function outputMessage(string $message)
     {
         if ($this->verbose) {
             DB::alteration_message($message);
+        } else {
+            $this->messages[] = $message;
         }
     }
 }

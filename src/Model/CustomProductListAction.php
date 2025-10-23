@@ -5,12 +5,14 @@ namespace Sunnysideup\EcommerceCustomProductLists\Model;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
+use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBBoolean;
 use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\FieldType\DBField;
 
@@ -41,7 +43,7 @@ class CustomProductListAction extends DataObject
 
     private static $db = [
         'StartNow' => 'Boolean',
-        'RunNow' => 'Boolean(1)',
+        'RunNow' => 'Boolean',
         'Title' => 'Varchar',
         'StartDateTime' => 'Datetime',
         'Started' => 'Boolean',
@@ -54,6 +56,7 @@ class CustomProductListAction extends DataObject
     ];
 
     private static $summary_fields = [
+        'Type' => 'Type',
         'ShortTitle' => 'Title',
         'StartDateTime.Nice' => 'Start',
         'StopDateTime.Nice' => 'Stop',
@@ -68,8 +71,11 @@ class CustomProductListAction extends DataObject
     ];
 
     private static $casting = [
+        'Type' => 'Varchar',
         'ShortTitle' => 'Varchar',
         'Activated' => 'Boolean',
+        'IsInFuture' => 'Boolean',
+        'IsInPast' => 'Boolean',
         'ProductCount' => 'Int',
         'CustomProductListsNames' => 'Varchar',
     ];
@@ -86,9 +92,11 @@ class CustomProductListAction extends DataObject
     ];
 
     private static $field_labels = [
-        'RunNow' => 'Apply start and stop on save rather than waiting for automatic application.',
-        'StartNow' => 'Ignore start and end date, just apply now, on saving (if it has already started, we will end this promotion)- careful!',
+        'RunNow' => 'Apply start and stop on save (respecting start and stop dates) rather than waiting for automatic application.',
+        'StartNow' => 'Ignore start and end date, just apply now, on saving (note that if it has already started, ticking this box and saving will end this promotion - please use with caution!)',
     ];
+
+    protected array $runMessages = [];
 
     /**
      * returns list of actions as array of ClassName => Title.
@@ -109,7 +117,6 @@ class CustomProductListAction extends DataObject
                 [
                     'StartDateTime:LessThan' => $now,
                     'StopDateTime:GreaterThan' => $now,
-                    'Started' => false,
                 ],
             )
         ;
@@ -142,18 +149,44 @@ class CustomProductListAction extends DataObject
         return $count;
     }
 
-    public function getActivated()
+    public function getActivated(): DBBoolean
     {
         $val = (bool) $this->Started === true && (bool) $this->Stopped === false;
-        return DBField::create_field('Boolean', $val);
+        return DBBoolean::create_field('Boolean', $val);
     }
+
+    public function getIsInFuture(): bool
+    {
+        $now = strtotime('now');
+        $from = strtotime((string) $this->StartDateTime);
+
+        return $from > $now;
+    }
+
+    public function getIsInPast(): bool
+    {
+        $now = strtotime('now');
+        $until = strtotime((string) $this->StopDateTime);
+
+        return $until < $now;
+    }
+
+    public function getIsInNow(): bool
+    {
+        $now = strtotime('now');
+        $from = strtotime((string) $this->StartDateTime);
+        $until = strtotime((string) $this->StopDateTime);
+
+        return $from < $now && $until > $now;
+    }
+
 
     public function getActivatedNotNice()
     {
         return (bool) $this->Started === true && (bool) $this->Stopped === false;
     }
 
-    public function doRunNow(): string
+    public function doRunNow(): array
     {
         $action = 'No change';
         if ($this->isRunStartNow()) {
@@ -165,22 +198,25 @@ class CustomProductListAction extends DataObject
             $this->write();
             $action = 'Stopped';
         }
-
-        return $this->Title . ' ... ' . $action;
+        $this->runMessages[] = $this->Title . ' ... ' . $action . ' COMPLETED';
+        return $this->runMessages;
     }
 
     public function runToStart(): bool
     {
-        user_error('Please extend this method: ' . __CLASS__ . '::' . __FUNCTION__);
-
-        return true;
+        user_error('You must implement runToStart in ' . __CLASS__, E_USER_ERROR);
+        return false;
     }
 
     public function runToEnd(): bool
     {
-        user_error('Please extend this method: ' . __CLASS__ . '::' . __FUNCTION__);
-
-        return true;
+        user_error('You must implement runToEnd in ' . __CLASS__, E_USER_ERROR);
+        return false;
+    }
+    public function repeatablyRun(): bool
+    {
+        user_error('You must implement repeatablyRun in ' . __CLASS__, E_USER_ERROR);
+        return false;
     }
 
     /**
@@ -188,18 +224,18 @@ class CustomProductListAction extends DataObject
      */
     public function isRunStartNow(): bool
     {
-        if ($this->Started) {
+        $repeatableRun = $this->repeatablyRun();
+        //cant repeat and already started: NO
+        if (!$repeatableRun && $this->Started) {
             return false;
         }
-        if ($this->StartNow && ! $this->Started) {
+        // can repeat and already started: YES
+        if ($this->StartNow) {
             return true;
         }
-        $now = strtotime('now');
-        $from = strtotime((string) $this->StartDateTime);
-        $until = strtotime((string) $this->StopDateTime);
-
-        return $from < $now && $until > $now;
+        return $this->getIsInNow();
     }
+
 
     /**
      * has an action and dates are current.
@@ -209,13 +245,10 @@ class CustomProductListAction extends DataObject
         if ($this->Stopped) {
             return false;
         }
-        if ($this->Started && $this->StartNow && ! $this->Stopped) {
+        if ($this->getIsInPast()) {
             return true;
         }
-        $now = strtotime('now');
-        $until = strtotime((string) $this->StopDateTime);
-
-        return  $until < $now;
+        return false;
     }
 
     public function getCMSFields()
@@ -256,28 +289,39 @@ class CustomProductListAction extends DataObject
                 'StartDateTime'
             );
 
-            $exampleProduct = $this->getAllProductsAsArrayList()->first();
-            if ($exampleProduct) {
+            $exampleProducts = $this->getAllProductsAsArrayList()->limit(10)->shuffle();
+            if ($exampleProducts->exists()) {
+                $linkArray = [];
+                foreach ($exampleProducts as $exampleProduct) {
+                    $linkArray[] = '- <a href="' . $exampleProduct->Link() . '" target="_blank">' . $exampleProduct->Title . '</a>';
+                }
                 $fields->addFieldsToTab(
                     'Root.Main',
                     [
                         ReadonlyField::create(
                             'ExampleProductLink',
-                            'Example Product',
-                            DBField::create_field('HTMLText', '<a href="' . $exampleProduct->Link() . '" target="_blank">' . $exampleProduct->Title . '</a>')
+                            'Example Products (up to 10 shown)',
+                            DBField::create_field('HTMLText', implode('<br /> ', $linkArray))
                         ),
                     ]
                 );
             }
             $fields->addFieldsToTab(
-                'Root.Debug',
+                'Root.Status',
                 [
-                    CheckboxField::create('IsRunNow', 'Should be started', $this->isRunStartNow())->performReadonlyTransformation(),
-                    CheckboxField::create('isRunEndNow', 'Should be stopped', $this->isRunEndNow())->performReadonlyTransformation(),
-                    $fields->dataFieldByName('Started'),
-                    $fields->dataFieldByName('Stopped'),
+                    HeaderField::create('RunNowHeader', 'Manual Actions'),
                     $fields->dataFieldByName('RunNow'),
                     $fields->dataFieldByName('StartNow'),
+                    HeaderField::create('StatusHeader', 'Start and Stop'),
+                    CheckboxField::create('isRunStartNowNice', 'Should be started', $this->isRunStartNow())->performReadonlyTransformation()
+                        ->setDescription('Indicates whether the action will be applied (again).'),
+                    $fields->dataFieldByName('Started'),
+                    CheckboxField::create('isRunEndNowNice', 'Should be stopped', $this->isRunEndNow())->performReadonlyTransformation(),
+                    $fields->dataFieldByName('Stopped'),
+                    HeaderField::create('TimingHeader', 'Timing'),
+                    CheckboxField::create('IsInNowNice', 'Is current', $this->getIsInNow())->performReadonlyTransformation(),
+                    CheckboxField::create('IsInPastNice', 'Is in the past', $this->getIsInPast())->performReadonlyTransformation(),
+                    CheckboxField::create('IsInFutureNice', 'Is in the future', $this->getIsInFuture())->performReadonlyTransformation(),
                 ]
             );
         } else {
@@ -287,7 +331,7 @@ class CustomProductListAction extends DataObject
         }
         if ($this->Stopped) {
             $fields->removeByName(
-                ['RunNow', 'StartNow']
+                ['RunNow', 'StartNow', 'RunNowHeader']
             );
         }
         $nextDay = date('Y-m-d h:i:s', strtotime('+2 hours'));
@@ -330,6 +374,11 @@ class CustomProductListAction extends DataObject
         return $result;
     }
 
+    public function getType()
+    {
+        return $this->i18n_singular_name();
+    }
+
     public function getShortTitle()
     {
         return 'Error';
@@ -343,8 +392,14 @@ class CustomProductListAction extends DataObject
     public function getAllProducts(): array
     {
         $list = [];
-        /** @var DataList $customList */
-        foreach ($this->CustomProductLists() as $customList) {
+        /**
+         * @var DataList $customLists
+         */
+        $customLists = $this->CustomProductLists();
+        /**
+         * @var DataObject $customList
+         */
+        foreach ($customLists as $customList) {
             foreach ($customList->Products() as $product) {
                 $list[$product->ID] = $product;
             }
