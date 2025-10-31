@@ -269,8 +269,8 @@ class CustomProductListAction extends DataObject
                 ->setSearchFields(['Title'])
             ;
             $customListsGridField->setDescription('Select one or more custom product lists to which this action will apply.');
+            $customListsGridField->setName('CustomProductListsSelector');
         }
-        $customListsGridField->setName('CustomProductListsSelector');
         $fields->addFieldsToTab(
             'Root.CustomProductLists',
             [
