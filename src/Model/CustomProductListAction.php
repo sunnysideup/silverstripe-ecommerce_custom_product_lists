@@ -4,6 +4,7 @@ namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\CheckboxSetField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
@@ -267,12 +268,21 @@ class CustomProductListAction extends DataObject
                 ->getComponentByType(GridFieldAddExistingAutocompleter::class)
                 ->setSearchFields(['Title'])
             ;
+            $customListsGridField->setDescription('Select one or more custom product lists to which this action will apply.');
         }
+        $customListsGridField->setName('CustomProductListsSelector');
         $fields->addFieldsToTab(
             'Root.CustomProductLists',
             [
+                CheckboxSetField::create(
+                    'CustomProductLists',
+                    'Quick Selection of Custom Product Lists to which this action applies',
+                    CustomProductList::get()
+                        ->sort(['LastEdited' => 'DESC'])
+                        ->map('ID', 'Title')
+                ),
                 LiteralField::create(
-                    'LinkToCustomProducLists',
+                    'LinkToCustomProductLists',
                     '<p><a href="/admin/product-config/Sunnysideup-EcommerceCustomProductLists-Model-CustomProductList">View all lists</a></p>'
                 ),
             ]
@@ -291,6 +301,7 @@ class CustomProductListAction extends DataObject
 
             $exampleProducts = $this->getAllProductsAsArrayList()->limit(10)->shuffle();
             if ($exampleProducts->exists()) {
+                $count = $this->getAllProductsAsArrayList()->count();
                 $linkArray = [];
                 foreach ($exampleProducts as $exampleProduct) {
                     $linkArray[] = '- <a href="' . $exampleProduct->Link() . '" target="_blank">' . $exampleProduct->Title . '</a>';
@@ -300,9 +311,10 @@ class CustomProductListAction extends DataObject
                     [
                         ReadonlyField::create(
                             'ExampleProductLink',
-                            'Example Products (up to 10 shown)',
+                            'Example Products',
                             DBField::create_field('HTMLText', implode('<br /> ', $linkArray))
-                        ),
+                        )
+                            ->setDescription('Showing up to 10 of ' . $count . ' products affected.'),
                     ]
                 );
             }
