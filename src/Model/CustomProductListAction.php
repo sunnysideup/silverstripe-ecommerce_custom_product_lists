@@ -256,7 +256,7 @@ class CustomProductListAction extends DataObject
     {
         $fields = parent::getCMSFields();
 
-        foreach (['Title', 'Started', 'Stopped'] as $readOnlyField) {
+        foreach (['Started', 'Stopped'] as $readOnlyField) {
             $fields->replaceField(
                 $readOnlyField,
                 $fields->dataFieldByName($readOnlyField)->performReadonlyTransformation()
