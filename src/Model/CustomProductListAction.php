@@ -347,8 +347,12 @@ class CustomProductListAction extends DataObject
             );
         }
         $nextDay = date('Y-m-d h:i:s', strtotime('+2 hours'));
-        $fields->dataFieldByName('StartDateTime')->setMinDatetime($nextDay);
-        $fields->dataFieldByName('StopDateTime')->setMinDatetime($nextDay);
+        if (! $this->Started && ! $this->isRunStartNow()) {
+            $fields->dataFieldByName('StartDateTime')->setMinDatetime($nextDay);
+        }
+        if (! $this->Stopped && ! $this->isRunEndNow()) {
+            $fields->dataFieldByName('StopDateTime')->setMinDatetime($nextDay);
+        }
 
         if ($this->Started) {
             $fields->addFieldsToTab(
