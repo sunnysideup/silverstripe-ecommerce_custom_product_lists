@@ -395,7 +395,7 @@ class CustomProductListAction extends DataObject
         return $this->i18n_singular_name();
     }
 
-    public function getShortTitle()
+    public function getShortTitle(): string
     {
         return 'Error';
     }
