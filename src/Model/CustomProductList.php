@@ -42,7 +42,7 @@ use Sunnysideup\Ecommerce\Pages\ProductGroup;
  * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList[] CustomProductListsToAdd()
  * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction[] CustomProductListActions()
  * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction[] CustomProductListAddedTo()
-  */
+ */
 class CustomProductList extends DataObject
 {
     /**
@@ -161,7 +161,7 @@ class CustomProductList extends DataObject
             ]
         );
         $html =
-        '<div id="Form_ItemEditForm_InternalItemCodeList_Holder" class="field readonly textarea">
+            '<div id="Form_ItemEditForm_InternalItemCodeList_Holder" class="field readonly textarea">
            <label class="left" for="Form_ItemEditForm_InternalItemCodeList">Included Codes</label>
               <div class="middleColumn">
                 <span id="Form_ItemEditForm_InternalItemCodeList" class="readonly textarea" style="word-break:break-all;">
@@ -203,15 +203,23 @@ class CustomProductList extends DataObject
             }
             //products to remove
             $productsToRemoveField = $fields->dataFieldByName('ProductsToDelete');
-            if ($productsToRemoveField) {
-                $productsToRemoveField->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.');
-                $productsToRemoveField->setConfig(GridFieldConfigForProducts::create());
-            }
+            // if ($productsToRemoveField) {
+            //     $productsToRemoveField->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.');
+            //     $productsToRemoveField->setConfig(GridFieldConfigForProducts::create());
+            // }
+            $fields->replaceField(
+                'ProductsToDelete',
+                CheckboxSetField::create(
+                    'ProductsToDelete',
+                    $productsToRemoveField->Title(),
+                    $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
+                )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
+            );
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
                     'Separate codes by ' . $this->Config()->get('separator') . ' (' . $this->Config()->get('separator_name') . ').' .
-                    '
+                        '
                         Only use this option if products are not currently available on site.
                         If they are already part of the site then you can add them using the tools provided.
                     '
@@ -275,7 +283,8 @@ class CustomProductList extends DataObject
         if ($this->exists()) {
             $fields->removeByName(
                 [
-                    'Root.CustomProductListActions', 'CustomProductListActions',
+                    'Root.CustomProductListActions',
+                    'CustomProductListActions',
                 ]
             );
             $fields->removeFieldsFromTab(
@@ -570,7 +579,7 @@ class CustomProductList extends DataObject
             'CMSMain.NEWPAGE',
             'Custom Product List'
         )
-        . ($this->ID ? ' ' . $this->ID : '');
+            . ($this->ID ? ' ' . $this->ID : '');
     }
 
     protected function generateTitle(): string
@@ -597,7 +606,6 @@ class CustomProductList extends DataObject
         return (bool) CustomProductList::get()
             ->filter(['Title' => $this->Title])
             ->exclude(['ID' => $this->ID])
-            ->exists()
-        ;
+            ->exists();
     }
 }
