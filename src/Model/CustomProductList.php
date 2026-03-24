@@ -207,14 +207,27 @@ class CustomProductList extends DataObject
             //     $productsToRemoveField->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.');
             //     $productsToRemoveField->setConfig(GridFieldConfigForProducts::create());
             // }
-            $fields->replaceField(
-                'ProductsToDelete',
-                CheckboxSetField::create(
+            if ($productsToRemoveField) {
+                $fields->replaceField(
                     'ProductsToDelete',
-                    $productsToRemoveField->Title(),
-                    $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
-                )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
-            );
+                    CheckboxSetField::create(
+                        'ProductsToDelete',
+                        $productsToRemoveField->getTitle(),
+                        $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
+                    )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
+                );
+            } else {
+                $fields->addFieldsToTab(
+                    'Root.Remove',
+                    [
+                        CheckboxSetField::create(
+                            'ProductsToDelete',
+                            'Products to Remove',
+                            $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
+                        )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
+                    ]
+                );
+            }
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
