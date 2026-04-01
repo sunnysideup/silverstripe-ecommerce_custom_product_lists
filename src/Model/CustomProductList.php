@@ -212,7 +212,7 @@ class CustomProductList extends DataObject
                     'ProductsToDelete',
                     CheckboxSetField::create(
                         'ProductsToDelete',
-                        $productsToRemoveField->getTitle(),
+                        $productsToRemoveField->Title(),
                         $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
                     )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
                 );
