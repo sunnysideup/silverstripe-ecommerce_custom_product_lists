@@ -2,6 +2,9 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
+use Override;
+use SilverStripe\Forms\Validation\RequiredFieldsValidator;
+use SilverStripe\ORM\ManyManyList;
 use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
@@ -11,7 +14,6 @@ use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\RequiredFields;
 use SilverStripe\Forms\TreeMultiselectField;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
@@ -36,12 +38,12 @@ use Sunnysideup\Ecommerce\Pages\ProductGroup;
  * @property string $InternalItemCodeListCustom
  * @property bool $KeepAddingFromCategories
  * @property bool $KeepAddingFromCustomProductListsToAdd
- * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\Ecommerce\Pages\Product[] ProductsToAdd()
- * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\Ecommerce\Pages\Product[] ProductsToDelete()
- * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\Ecommerce\Pages\ProductGroup[] CategoriesToAdd()
- * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductList[] CustomProductListsToAdd()
- * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction[] CustomProductListActions()
- * @method \SilverStripe\ORM\ManyManyList|\Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction[] CustomProductListAddedTo()
+ * @method ManyManyList|Product[] ProductsToAdd()
+ * @method ManyManyList|Product[] ProductsToDelete()
+ * @method ManyManyList|ProductGroup[] CategoriesToAdd()
+ * @method ManyManyList|CustomProductList[] CustomProductListsToAdd()
+ * @method ManyManyList|CustomProductListAction[] CustomProductListActions()
+ * @method ManyManyList|CustomProductListAction[] CustomProductListAddedTo()
  */
 class CustomProductList extends DataObject
 {
@@ -51,6 +53,7 @@ class CustomProductList extends DataObject
      * @var string
      */
     private static $separator = ',';
+
     private static $separator_name = 'comma';
 
     /**
@@ -138,11 +141,13 @@ class CustomProductList extends DataObject
      *
      * @return bool
      */
+    #[Override]
     public function canDelete($member = null)
     {
         return $this->Locked ? false : Injector::inst()->get(ProductGroup::class)->canDelete($member);
     }
 
+    #[Override]
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
@@ -201,6 +206,7 @@ class CustomProductList extends DataObject
                 $productsToAddField->setDescription('Use this field to add products, they will be remove again from this list after they have been added to main list.');
                 $productsToAddField->setConfig(GridFieldConfigForProducts::create());
             }
+
             //products to remove
             $productsToRemoveField = $fields->dataFieldByName('ProductsToDelete');
             // if ($productsToRemoveField) {
@@ -213,7 +219,7 @@ class CustomProductList extends DataObject
                     CheckboxSetField::create(
                         'ProductsToDelete',
                         $productsToRemoveField->Title(),
-                        $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
+                        $this->Products()->sort(['Title' => 'ASC'])->map('ID', 'FullName')->toArray()
                     )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
                 );
             } else {
@@ -223,11 +229,12 @@ class CustomProductList extends DataObject
                         CheckboxSetField::create(
                             'ProductsToDelete',
                             'Products to Remove',
-                            $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
+                            $this->Products()->sort(['Title' => 'ASC'])->map('ID', 'FullName')->toArray()
                         )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
                     ]
                 );
             }
+
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
@@ -244,6 +251,7 @@ class CustomProductList extends DataObject
                     ]
                 );
             }
+
             $fields->addFieldsToTab(
                 'Root.ProductsToAdd',
                 [
@@ -293,6 +301,7 @@ class CustomProductList extends DataObject
                 );
             }
         }
+
         if ($this->exists()) {
             $fields->removeByName(
                 [
@@ -326,9 +335,10 @@ class CustomProductList extends DataObject
 
     public function getCMSValidator()
     {
-        return RequiredFields::create('Title');
+        return RequiredFieldsValidator::create('Title');
     }
 
+    #[Override]
     public function populateDefaults()
     {
         $this->Title = $this->defaultTitle();
@@ -343,6 +353,7 @@ class CustomProductList extends DataObject
         foreach ($list as $key => $code) {
             $list[$key] = trim((string) $code);
         }
+
         if (!is_array($list)) {
             $list = [];
         }
@@ -367,6 +378,7 @@ class CustomProductList extends DataObject
 
     protected $writeAgain = false;
 
+    #[Override]
     protected function onBeforeWrite()
     {
         parent::onBeforeWrite();
@@ -380,6 +392,7 @@ class CustomProductList extends DataObject
         } else {
             $this->writeAgain = true;
         }
+
         // If there is no Title set, generate one from Title
         $this->Title = $this->generateTitle();
         // Ensure that this object has a non-conflicting Title value.
@@ -388,6 +401,7 @@ class CustomProductList extends DataObject
             $this->Title = preg_replace('#-\d+$#', '', (string) $this->Title) . '-' . $count;
             ++$count;
         }
+
         if (!$this->Locked) {
             $this->addProductsFromCategories();
             $this->addProductsFromOtherLists();
@@ -406,6 +420,7 @@ class CustomProductList extends DataObject
                     }
                 }
             }
+
             if ($this->MustAlsoBeInCategories()->exists()) {
                 $mustAlsoBeIn = [];
                 foreach ($this->MustAlsoBeInCategories() as $category) {
@@ -416,14 +431,17 @@ class CustomProductList extends DataObject
                         }
                     }
                 }
+
                 $arrayToAdd = array_intersect($arrayToAdd, $mustAlsoBeIn);
             }
-            if (count($arrayToAdd)) {
+
+            if ($arrayToAdd !== []) {
                 $list = Product::get()->filter(['ID' => $arrayToAdd]);
                 if ($list->exists()) {
                     $this->AddProductsToString($list);
                 }
             }
+
             if (!$this->KeepAddingFromCategories) {
                 $this->CategoriesToAdd()->removeAll();
             }
@@ -440,12 +458,14 @@ class CustomProductList extends DataObject
                     $this->AddProductsToString($list);
                 }
             }
+
             if (!$this->KeepAddingFromCustomProductListsToAdd) {
                 $this->CustomProductListsToAdd()->removeAll();
             }
         }
     }
 
+    #[Override]
     protected function onAfterWrite()
     {
         parent::onAfterWrite();
@@ -460,7 +480,7 @@ class CustomProductList extends DataObject
     /**
      * add many products.
      *
-     * @param \SilverStripe\ORM\DataList $products
+     * @param DataList $products
      * @param bool                       $write    -should the dataobject be written?
      */
     protected function AddProductsToString($products, ?bool $write = false)
@@ -514,8 +534,9 @@ class CustomProductList extends DataObject
     {
         $array = $this->getProductsAsInternalItemsArray();
         if (is_array($array) && in_array($product->InternalItemID, $array, true)) {
-            return;
+            return null;
         }
+
         $array[] = $product->InternalItemID;
         $this->setProductsFromArray($array, $write);
 
@@ -532,8 +553,9 @@ class CustomProductList extends DataObject
     {
         $array = $this->getProductsAsInternalItemsArray();
         if (is_array($array) && in_array($internalItemID, $array, true)) {
-            return;
+            return null;
         }
+
         $array[] = $internalItemID;
         $this->setProductsFromArray($array, $write);
 
@@ -549,8 +571,9 @@ class CustomProductList extends DataObject
     {
         $array = $this->getProductsAsInternalItemsArray();
         if (!in_array($product->InternalItemID, $array, true)) {
-            return;
+            return null;
         }
+
         $array = array_diff($array, [$product->InternalItemID]);
         $this->setProductsFromArray($array, $write);
 
@@ -568,7 +591,7 @@ class CustomProductList extends DataObject
             if ($value) {
                 $value = trim((string) $value);
                 $value = str_replace($sep, $alt, $value);
-                if ($value) {
+                if ($value !== '' && $value !== '0') {
                     $array[$key] = $value;
                 } else {
                     unset($array[$key]);
@@ -577,6 +600,7 @@ class CustomProductList extends DataObject
                 unset($array[$key]);
             }
         }
+
         $newString = implode($sep, $array);
         $this->InternalItemCodeList = $newString;
         if ($write) {
@@ -602,6 +626,7 @@ class CustomProductList extends DataObject
         if (!$title) {
             $title = ($list->exists() ? implode('; ', $list->column('Title')) : $this->defaultTitle());
         }
+
         $filter = URLSegmentFilter::create();
         $title = $filter->filter($title);
 
