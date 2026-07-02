@@ -2,56 +2,56 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Tasks;
 
+use Symfony\Component\Console\Input\InputInterface;
+use SilverStripe\Console\PolyOutput;
+use Symfony\Component\Console\Command\Command;
 use SilverStripe\Dev\BuildTask;
 use SilverStripe\ORM\DB;
 use Sunnysideup\EcommerceCustomProductLists\Model\CustomProductListAction;
 
+use Symfony\Component\Console\Input\InputOption;
+
 class RunCustomProductListActions extends BuildTask
 {
-    protected $title = 'Run Custom Product List actions.';
+    protected string $title = 'Run Custom Product List actions.';
 
-    protected $description = 'Goes throught all the product custom lists actions and, if they are current, runs them.';
+    protected static string $description = 'Goes throught all the product custom lists actions and, if they are current, runs them.';
 
-    protected $verbose = true;
+    protected static string $commandName = 'run-custom-product-list-actions';
 
-    private static $segment = 'run-custom-product-list-actions';
-
-    public function setVerbose(bool $b)
+    public function getOptions(): array
     {
-        $this->verbose = $b;
-
-        return $this;
+        return [
+            new InputOption('verbose', 'v', InputOption::VALUE_NONE, 'Show verbose output'),
+        ];
     }
 
-    protected array $messages = [];
-
-    public function run($request)
+    protected function execute(InputInterface $input, PolyOutput $output): int
     {
+        $verbose = $input->getOption('verbose');
+
         $lists = [
             'Start Actions' => CustomProductListAction::get_current_actions_to_start(),
             'End Actions' => CustomProductListAction::get_current_actions_to_end(),
         ];
         foreach ($lists as $title => $list) {
-            $this->outputMessage($title);
+            if($verbose) {
+                $output->writeln($title);
+            }
             foreach ($list as $runner) {
                 $messages = $runner->doRunNow();
                 foreach ($messages as $message) {
-                    $this->outputMessage('    ' . $message);
+                    if($verbose) {
+                        $output->writeln('    ' . $message);
+                    }
                 }
             }
         }
-        $this->outputMessage('--- DONE ---');
-        if (! $this->verbose) {
-            return $this->messages;
-        }
-    }
 
-    protected function outputMessage(string $message)
-    {
-        if ($this->verbose) {
-            DB::alteration_message($message);
-        } else {
-            $this->messages[] = $message;
+        if($verbose) {
+            $output->writeln('--- DONE ---');
         }
+
+        return Command::SUCCESS;
     }
 }
