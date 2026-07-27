@@ -8,16 +8,20 @@ use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\CheckboxSetField;
 use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\RequiredFields;
+use SilverStripe\Forms\Tab;
 use SilverStripe\Forms\TreeMultiselectField;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\Parsers\URLSegmentFilter;
 use Sunnysideup\Ecommerce\Config\EcommerceConfig;
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfig;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
+use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProductGroups;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
@@ -60,6 +64,18 @@ class CustomProductList extends DataObject
      * @var string
      */
     private static $separator_alternative = ';';
+    private static $definition_of_recently_edited = '-3 months';
+    private static $scaffold_cms_fields_settings = [
+        'includeRelations' => false,
+    ];
+
+    private static $core_rels = [
+        'ProductsToAdd',
+        'ProductsToDelete',
+        'CategoriesToAdd',
+        'MustAlsoBeInCategories',
+        'CustomProductListsToAdd',
+    ];
 
     private static $table_name = 'CustomProductList';
 
@@ -146,20 +162,29 @@ class CustomProductList extends DataObject
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        if ($this->exists()) {
-            $fields->fieldByName('Root.ProductsToAdd')->setTitle('Products to add to this list');
-            $fields->fieldByName('Root.ProductsToDelete')->setTitle('Products to remove from this list');
-        }
-
-        $fields->removeFieldsFromTab(
+        $fields->addFieldToTab(
             'Root',
-            [
-                'MustAlsoBeInCategories',
-                'CategoriesToAdd',
-                'CustomProductListsToAdd',
-                // 'CustomProductListAddedTo',
-            ]
+            new Tab('ProductsToAdd', _t('CustomProductList.PRODUCTS_TO_ADD', 'Add to Products')),
+            'Main'
         );
+        if ($this->exists()) {
+            $fieldsToAdd = [];
+            foreach ($this->config()->get('core_rels') as $rel) {
+                $fields->removeByName($rel);
+                $fieldsToAdd[$rel] = GridField::create(
+                    $rel,
+                    $this->fieldLabel($rel),
+                    $this->$rel(),
+                    GridFieldBasicPageRelationConfig::create()
+                );
+            }
+            $ac = $fieldsToAdd['CustomProductListsToAdd']?->getConfig()?->getComponentByType(GridFieldAddExistingAutocompleter::class);
+            if ($ac) {
+                $ac->setSearchFields(['Title']);
+                $ac->setResultsFormat('Title');
+            }
+
+        }
         $html =
             '<div id="Form_ItemEditForm_InternalItemCodeList_Holder" class="field readonly textarea">
            <label class="left" for="Form_ItemEditForm_InternalItemCodeList">Included Codes</label>
@@ -190,44 +215,25 @@ class CustomProductList extends DataObject
             $currentProductsField
         );
         $fields->removeFieldFromTab('Root', 'Products');
-        if ($this->Locked) {
-            $fields->removeFieldFromTab('Root', 'ProductsToAdd');
-            $fields->removeFieldFromTab('Root', 'ProductsToDelete');
+        if ($this->Locked || ! $this->exists()) {
             $fields->removeFieldFromTab('Root.Main', 'InternalItemCodeListCustom');
         } else {
             //products to add
-            $productsToAddField = $fields->dataFieldByName('ProductsToAdd');
+            $productsToAddField = $fieldsToAdd['ProductsToAdd'] ?? null;
             if ($productsToAddField) {
                 $productsToAddField->setDescription('Use this field to add products, they will be remove again from this list after they have been added to main list.');
                 $productsToAddField->setConfig(GridFieldConfigForProducts::create());
             }
-            //products to remove
-            $productsToRemoveField = $fields->dataFieldByName('ProductsToDelete');
-            // if ($productsToRemoveField) {
-            //     $productsToRemoveField->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.');
-            //     $productsToRemoveField->setConfig(GridFieldConfigForProducts::create());
-            // }
-            if ($productsToRemoveField) {
-                $fields->replaceField(
-                    'ProductsToDelete',
+            $fields->addFieldsToTab(
+                'Root.Remove',
+                [
                     CheckboxSetField::create(
                         'ProductsToDelete',
-                        $productsToRemoveField->Title(),
+                        'Products to Remove',
                         $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
                     )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
-                );
-            } else {
-                $fields->addFieldsToTab(
-                    'Root.Remove',
-                    [
-                        CheckboxSetField::create(
-                            'ProductsToDelete',
-                            'Products to Remove',
-                            $this->Products()->sort('Title')->map('ID', 'FullName')->toArray()
-                        )->setDescription('Use this field to remove products, they will be removed again from this list after they have been removed from main list.')
-                    ]
-                );
-            }
+                ]
+            );
             $manualCodesField = $fields->dataFieldByName('InternalItemCodeListCustom');
             if ($manualCodesField) {
                 $manualCodesField->setDescription(
@@ -248,9 +254,11 @@ class CustomProductList extends DataObject
                 'Root.ProductsToAdd',
                 [
                     HeaderField::create('ProductsToAddFromCategories', 'Products to add from Categories', 1),
-                    TreeMultiselectField::create('CategoriesToAdd', 'Categories to add', SiteTree::class)
+                    $fieldsToAdd['CategoriesToAdd']
+                        ->setConfig(GridFieldConfigForProductGroups::create())
                         ->setDescription('All products in selected categories will be added. Make sure to select a category.'),
-                    TreeMultiselectField::create('MustAlsoBeInCategories', 'Products must also be included in', SiteTree::class)
+                    $fieldsToAdd['MustAlsoBeInCategories']
+                        ->setConfig(GridFieldConfigForProductGroups::create())
                         ->setDescription('For the categories selected above, the products must also be in the categories listed here.'),
                     CheckboxField::create('KeepAddingFromCategories', 'Keep adding from catories?')
                         ->setDescription(
@@ -259,7 +267,9 @@ class CustomProductList extends DataObject
                             If you do not tick this box then we add the products from the selected categories only once - if ticked, everytime you save, we will try to keep adding more products from your selection.'
                         ),
                     HeaderField::create('ProductsToAddFromOtherCustomLists', 'Products to add from Other Custom Lists', 1),
-                    CheckboxSetField::create('CustomProductListsToAdd', 'Other custom lists to add to this one', CustomProductList::get()->exclude(['ID' => $this->ID])->map()),
+                    $fieldsToAdd['CustomProductListsToAdd']
+                        ->setConfig(GridFieldBasicPageRelationConfig::create())
+                        ->setDescription('All products in selected custom product lists will be added. Make sure to select a list.'),
                     CheckboxField::create('KeepAddingFromCustomProductListsToAdd', 'Keep adding from other custom product lists?')
                         ->setDescription(
                             '
@@ -620,5 +630,49 @@ class CustomProductList extends DataObject
             ->filter(['Title' => $this->Title])
             ->exclude(['ID' => $this->ID])
             ->exists();
+    }
+
+    public function RecentlyEdited(): bool
+    {
+        return strtotime($this->LastEdited) > strtotime($this->config()->get('definition_of_recently_edited'));
+    }
+
+    public function UsedAnywhere(): bool
+    {
+        return $this->ListOfUsagePoints() === [] ? false : true;
+    }
+
+    public function ListOfUsagePoints(): array
+    {
+        $rels = $this->ListOfRelationships();
+        foreach ($rels as $method => $class) {
+            if (!method_exists($this, $method)) {
+                unset($rels[$method]);
+            }
+            $relObjectOrObjects = $this->$method();
+            if (!($relObjectOrObjects && $relObjectOrObjects->exists())) {
+                unset($rels[$method]);
+            }
+        }
+        return $rels;
+    }
+
+    public function ListOfRelationships(): array
+    {
+        $relNames = [
+            'has_one',
+            'has_many',
+            'many_many',
+            'belongs_to',
+            'belongs_many_many',
+        ];
+        $rels = [];
+        foreach ($relNames as $relName) {
+            $rels += $this->config()->get($relName)
+                ? $this->config()->get($relName)
+                : [];
+
+        }
+        return $rels;
     }
 }
