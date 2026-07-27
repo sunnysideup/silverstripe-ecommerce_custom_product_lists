@@ -2,7 +2,6 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
-use SilverStripe\CMS\Model\SiteTree;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\CheckboxField;
@@ -12,12 +11,15 @@ use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\Forms\RequiredFields;
 use SilverStripe\Forms\Tab;
-use SilverStripe\Forms\TreeMultiselectField;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBBoolean;
+use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\View\Parsers\URLSegmentFilter;
+use Sunnysideup\CmsEditLinkField\Api\CMSEditLinkAPI;
 use Sunnysideup\Ecommerce\Config\EcommerceConfig;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfig;
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldBasicPageRelationConfigNoAddExisting;
@@ -120,6 +122,9 @@ class CustomProductList extends DataObject
         'Title' => 'FullName',
         'ProductCount' => 'Products',
         'Locked.NiceAndColourfull' => 'Locked',
+        'UsedAnywhere.NiceAndColourfull' => 'Used anywhere?',
+        'RecentlyEdited.NiceAndColourfull' => 'Recently Edited',
+
     ];
 
     private static $field_labels = [
@@ -135,6 +140,8 @@ class CustomProductList extends DataObject
     private static $casting = [
         'FullName' => 'Varchar',
         'ProductCount' => 'Int',
+        'UsedAnywhere' => 'Boolean',
+        'RecentlyEdited' => 'Boolean',
     ];
 
     public function getFullName()
@@ -156,7 +163,16 @@ class CustomProductList extends DataObject
      */
     public function canDelete($member = null)
     {
-        return $this->Locked ? false : Injector::inst()->get(ProductGroup::class)->canDelete($member);
+        if($this->Locked) {
+            return false;
+        }
+        if($this->UsedAnywhere()->raw()) {
+            return false;
+        }
+        if($this->RecentlyEdited()->raw()) {
+            return false;
+        }
+        return parent::canDelete($member);
     }
 
     public function getCMSFields()
@@ -164,8 +180,8 @@ class CustomProductList extends DataObject
         $fields = parent::getCMSFields();
         $fields->addFieldToTab(
             'Root',
-            new Tab('ProductsToAdd', _t('CustomProductList.PRODUCTS_TO_ADD', 'Add to Products')),
-            'Main'
+            new Tab('AddProducts', _t('CustomProductList.PRODUCTS_TO_ADD', 'Add Products')),
+            'Actions'
         );
         if ($this->exists()) {
             $fieldsToAdd = [];
@@ -244,14 +260,15 @@ class CustomProductList extends DataObject
                     '
                 );
                 $fields->addFieldsToTab(
-                    'Root.AddUnlistedProductsToList',
+                    'Root.AddProducts',
                     [
+                        HeaderField::create('ProductsToAddManually', 'Products to add manually', 1),
                         $manualCodesField,
                     ]
                 );
             }
             $fields->addFieldsToTab(
-                'Root.ProductsToAdd',
+                'Root.AddProducts',
                 [
                     HeaderField::create('ProductsToAddFromCategories', 'Products to add from Categories', 1),
                     $fieldsToAdd['CategoriesToAdd']
@@ -316,20 +333,24 @@ class CustomProductList extends DataObject
                     'CustomProductListAddedTo',
                 ]
             );
-            if (!$this->Locked) {
-                $fields->addFieldsToTab(
-                    'Root.ProductsToAdd',
-                    [
-                        GridField::create(
-                            'CustomProductListAddedTo',
-                            'This custom lists adds products to the following other custom lists',
-                            $this->CustomProductListAddedTo(),
-                            GridFieldConfig_RecordViewer::create()
-                        )
-                    ],
-                );
-            }
         }
+
+
+        $fields->addFieldsToTab(
+            'Root.Usage',
+            [
+                ReadonlyField::create('UsedAnywhereNice', 'Used Anywhere', $this->UsedAnywhere()->Nice()),
+                ReadonlyField::create('ListOfUsagePointsNice', 'Usage', implode(', ', array_keys($this->ListOfUsagePoints()))),
+                ReadonlyField::create('RecentlyEditedNice', 'Recently Edited', $this->RecentlyEdited()->Nice()),
+                GridField::create(
+                    'CustomProductListAddedTo',
+                    'This custom lists adds products to the following other custom lists',
+                    $this->CustomProductListAddedTo(),
+                    GridFieldConfig_RecordViewer::create()
+                )
+
+            ]
+        );
 
         return $fields;
     }
@@ -518,7 +539,7 @@ class CustomProductList extends DataObject
     /**
      * add one product.
      *
-     * @param bool $write -should the dataobject be written?
+     * @param ?bool $write -should the dataobject be written?
      */
     protected function AddProductToString(Product $product, ?bool $write = false)
     {
@@ -536,9 +557,9 @@ class CustomProductList extends DataObject
      * add one product, using InternalItemID.
      *
      * @param string $internalItemID
-     * @param bool   $write          -should the dataobject be written?
+     * @param ?bool   $write          -should the dataobject be written?
      */
-    protected function AddProductCodeToString($internalItemID, $write = false)
+    protected function AddProductCodeToString($internalItemID, ?bool $write = false)
     {
         $array = $this->getProductsAsInternalItemsArray();
         if (is_array($array) && in_array($internalItemID, $array, true)) {
@@ -555,7 +576,7 @@ class CustomProductList extends DataObject
      *
      * @param bool $write -should the dataobject be written?
      */
-    protected function RemoveProductFromString(Product $product, $write = false)
+    protected function RemoveProductFromString(Product $product, ?bool $write = false)
     {
         $array = $this->getProductsAsInternalItemsArray();
         if (!in_array($product->InternalItemID, $array, true)) {
@@ -632,47 +653,75 @@ class CustomProductList extends DataObject
             ->exists();
     }
 
-    public function RecentlyEdited(): bool
+    public function RecentlyEdited(): DBBoolean
     {
-        return strtotime($this->LastEdited) > strtotime($this->config()->get('definition_of_recently_edited'));
+        $v = strtotime((string) $this->LastEdited) > strtotime($this->config()->get('definition_of_recently_edited'));
+        return DBBoolean::create_field(DBBoolean::class, $v);
     }
 
-    public function UsedAnywhere(): bool
+    public function UsedAnywhere(): DBBoolean
     {
-        return $this->ListOfUsagePoints() === [] ? false : true;
+        $v = $this->ListOfUsagePoints() !== [];
+        return DBBoolean::create_field(DBBoolean::class, $v);
     }
 
     public function ListOfUsagePoints(): array
     {
         $rels = $this->ListOfRelationships();
         foreach ($rels as $method => $class) {
-            if (!method_exists($this, $method)) {
-                unset($rels[$method]);
-            }
             $relObjectOrObjects = $this->$method();
-            if (!($relObjectOrObjects && $relObjectOrObjects->exists())) {
+            if(!$relObjectOrObjects->exists()) {
                 unset($rels[$method]);
             }
         }
         return $rels;
     }
 
+    public function ListOfUsagePointsCheck()
+    {
+        $v = '';
+        foreach ($this->ListOfRelationships() as $method => $class) {
+            $v .= '<li>' . $method . ': ' . $this->$method()->count() . '</li>';
+        }
+        $v = $v ? '<ul>' . $v . '</ul>' : '';
+        return DBHTMLText::create_field(DBHTMLText::class, $v);
+    }
+
+
+    protected static array $_listOfRelationships = [];
     public function ListOfRelationships(): array
     {
-        $relNames = [
-            'has_one',
-            'has_many',
-            'many_many',
-            'belongs_to',
-            'belongs_many_many',
-        ];
-        $rels = [];
-        foreach ($relNames as $relName) {
-            $rels += $this->config()->get($relName)
-                ? $this->config()->get($relName)
-                : [];
+        if(self::$_listOfRelationships === []) {
+            $relNames = [
+                'has_one',
+                'has_many',
+                'many_many',
+                'belongs_to',
+                'belongs_many_many',
+            ];
+            $rels = [];
+            foreach ($relNames as $relName) {
+                $check = $this->config()->get($relName);
+                if (is_array($check)) {
+                    foreach ($check as $name => $class) {
+                        if(is_array($class)) {
+                            $class = $class['through'] ?? '';
+                            $name = $class['from'] ?? $name;
+                        }
+                        $rels[$name] = $class;
+                    }
+                }
 
+            }
+            self::$_listOfRelationships = $rels;
         }
-        return $rels;
+        return self::$_listOfRelationships;
     }
+
+    public function CMSEditLink(): string
+    {
+        return CMSEditLinkAPI::find_edit_link_for_object($this);
+    }
+
+
 }
