@@ -2,6 +2,7 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Model;
 
+use SilverStripe\CMS\Forms\SiteTreeURLSegmentField;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\CheckboxField;
@@ -27,6 +28,7 @@ use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProductGroup
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
+use Sunnysideup\EcommerceCustomProductLists\Pages\CustomListPage;
 
 /**
  * 1. titles should not be identical
@@ -83,6 +85,7 @@ class CustomProductList extends DataObject
 
     private static $db = [
         'Title' => 'Varchar(255)',
+        'URLSegment' => 'Varchar(255)',
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
@@ -94,6 +97,10 @@ class CustomProductList extends DataObject
         'ProductListIndex' => [
             'type' => 'unique',
             'columns' => ['Title'],
+        ],
+        'URLSegmentIndex' => [
+            'type' => 'unique',
+            'columns' => ['URLSegment'],
         ],
     ];
 
@@ -351,7 +358,26 @@ class CustomProductList extends DataObject
 
             ]
         );
-
+        $baseLink = $this->MyDisplayPage()?->Link('show') ?? '';
+        if($baseLink) {
+            $urlsegment = SiteTreeURLSegmentField::create(
+                "URLSegment",
+                $this->fieldLabel('URLSegment')
+            )
+                ->setURLPrefix($baseLink)
+                ->setURLSuffix('/' . $this->ID)
+                ->setDefaultURL($this->generateURLSegment(_t(
+                    'SilverStripe\\CMS\\Controllers\\CMSMain.NEWPAGE',
+                    'New {pagetype}',
+                    ['pagetype' => $this->i18n_singular_name()]
+                )));
+            $helpText = '';
+            if (!URLSegmentFilter::create()->getAllowMultibyte()) {
+                $helpText .= _t('SilverStripe\\CMS\\Forms\\SiteTreeURLSegmentField.HelpChars', ' Special characters are automatically converted or removed.');
+            }
+            $urlsegment->setHelpText($helpText);
+            $fields->replaceField('URLSegment', $urlsegment);
+        }
         return $fields;
     }
 
@@ -423,6 +449,40 @@ class CustomProductList extends DataObject
             $this->addProductsFromCategories();
             $this->addProductsFromOtherLists();
         }
+        // If there is no URLSegment set, generate one from Title
+        $defaultSegment = 'custom-list-' . ($this->ID ?: rand(10000, 99999));
+        if ((!$this->hasURLSegment() || $this->URLSegment == $defaultSegment) && $this->Title) {
+            $this->URLSegment = $this->generateURLSegment($this->Title);
+        } elseif ($this->isChanged('URLSegment', 2)) {
+            // Do a strict check on change level, to avoid double encoding caused by
+            // bogus changes through forceChange()
+            $filter = URLSegmentFilter::create();
+            $this->URLSegment = $filter->filter($this->URLSegment);
+            // If after sanitising there is no URLSegment, give it a reasonable default
+            if (!$this->hasURLSegment()) {
+                $this->URLSegment = $defaultSegment;
+            }
+        }
+    }
+    private function hasURLSegment(): bool
+    {
+        return $this->URLSegment !== false && $this->URLSegment !== null && $this->URLSegment !== '';
+    }
+
+    public function generateURLSegment($title): string
+    {
+        $filter = URLSegmentFilter::create();
+        $filteredTitle = $filter->filter($title);
+
+        // Fallback to generic page name if path is empty (= no valid, convertable characters)
+        if (!$filteredTitle || $filteredTitle == '-' || $filteredTitle == '-1') {
+            $filteredTitle = "custom-list-$this->ID";
+        }
+
+        // Hook for extensions
+        $this->extend('updateURLSegment', $filteredTitle, $title);
+
+        return (string) $filteredTitle;
     }
 
     protected function addProductsFromCategories()
@@ -723,5 +783,30 @@ class CustomProductList extends DataObject
         return CMSEditLinkAPI::find_edit_link_for_object($this);
     }
 
+
+    public function Link($action = null): string
+    {
+        return $this->getLink($action);
+    }
+
+    public function getLink($action = null): string
+    {
+        // Implement the logic for generating the link here
+        if(! $this->URLSegment) {
+            $this->write();
+        }
+        $page = $this->MyDisplayPage() ;
+        if($page) {
+            $page->setCustomList($this);
+            return $page->Link();
+        }
+        return '';
+
+    }
+
+    public function MyDisplayPage(): ?CustomListPage
+    {
+        return CustomListPage::get()->first();
+    }
 
 }
