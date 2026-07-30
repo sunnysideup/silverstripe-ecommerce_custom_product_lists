@@ -10,6 +10,8 @@ use SilverStripe\Forms\CheckboxSetField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddExistingAutocompleter;
 use SilverStripe\Forms\GridField\GridFieldConfig_RecordViewer;
+use SilverStripe\Forms\GridField\GridFieldDeleteAction;
+use SilverStripe\Forms\GridField\GridFieldExportButton;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\ReadonlyField;
@@ -58,8 +60,8 @@ class CustomProductList extends DataObject
      *
      * @var string
      */
-    private static $separator = ',';
-    private static $separator_name = 'comma';
+    private static string $separator = ',';
+    private static string $separator_name = 'comma';
 
     /**
      * if a product separator is used in the product code then
@@ -67,13 +69,13 @@ class CustomProductList extends DataObject
      *
      * @var string
      */
-    private static $separator_alternative = ';';
-    private static $definition_of_recently_edited = '-3 months';
-    private static $scaffold_cms_fields_settings = [
+    private static string $separator_alternative = ';';
+    private static string $definition_of_recently_edited = '-6 months';
+    private static array $scaffold_cms_fields_settings = [
         'includeRelations' => false,
     ];
 
-    private static $core_rels = [
+    private static array $core_rels = [
         'ProductsToAdd',
         'ProductsToDelete',
         'CategoriesToAdd',
@@ -86,6 +88,7 @@ class CustomProductList extends DataObject
     private static $db = [
         'Title' => 'Varchar(255)',
         'URLSegment' => 'Varchar(255)',
+        'PubliclyAvailable' => 'Boolean',
         'Locked' => 'Boolean',
         'InternalItemCodeList' => 'Text',
         'InternalItemCodeListCustom' => 'Text',
@@ -138,6 +141,7 @@ class CustomProductList extends DataObject
         'InternalItemCodeList' => 'Included Codes',
         'InternalItemCodeListCustom' => 'Manually added codes',
         'ProductsToDelete' => 'Remove Products from List',
+        'Locked' => 'Locked: do not remove - here to stay - change with care or unlock first',
     ];
 
     private static $default_sort = [
@@ -170,13 +174,13 @@ class CustomProductList extends DataObject
      */
     public function canDelete($member = null)
     {
-        if($this->Locked) {
+        if ($this->Locked) {
             return false;
         }
-        if($this->UsedAnywhere()->raw()) {
+        if ($this->UsedAnywhere()->raw()) {
             return false;
         }
-        if($this->RecentlyEdited()->raw()) {
+        if ($this->RecentlyEdited()->raw()) {
             return false;
         }
         return parent::canDelete($member);
@@ -188,6 +192,11 @@ class CustomProductList extends DataObject
         $fields->addFieldToTab(
             'Root',
             new Tab('AddProducts', _t('CustomProductList.PRODUCTS_TO_ADD', 'Add Products')),
+            'Actions'
+        );
+        $fields->addFieldToTab(
+            'Root',
+            new Tab('Remove', _t('CustomProductList.PRODUCTS_TO_REMOVE', 'Remove Products')),
             'Actions'
         );
         if ($this->exists()) {
@@ -206,7 +215,6 @@ class CustomProductList extends DataObject
                 $ac->setSearchFields(['Title']);
                 $ac->setResultsFormat('Title');
             }
-
         }
         $html =
             '<div id="Form_ItemEditForm_InternalItemCodeList_Holder" class="field readonly textarea">
@@ -230,6 +238,8 @@ class CustomProductList extends DataObject
             'Products to be shown',
             $this->Products(),
             GridFieldBasicPageRelationConfigNoAddExisting::create()
+                ->addComponent(new GridFieldExportButton('buttons-before-right'))
+                ->removeComponentsByType(GridFieldDeleteAction::class)
         );
         $currentProductsField->setDescription('Calculated products, based on the list of included product codes (see Main Tab).');
 
@@ -240,6 +250,10 @@ class CustomProductList extends DataObject
         $fields->removeFieldFromTab('Root', 'Products');
         if ($this->Locked || ! $this->exists()) {
             $fields->removeFieldFromTab('Root.Main', 'InternalItemCodeListCustom');
+            $fields->removeByName('KeepAddingFromCategories');
+            $fields->removeByName('KeepAddingFromCustomProductListsToAdd');
+            $fields->removeFieldFromTab('Root', 'AddProducts');
+            $fields->removeFieldFromTab('Root', 'Remove');
         } else {
             //products to add
             $productsToAddField = $fieldsToAdd['ProductsToAdd'] ?? null;
@@ -358,25 +372,29 @@ class CustomProductList extends DataObject
 
             ]
         );
-        $baseLink = $this->MyDisplayPage()?->Link('show') ?? '';
-        if($baseLink) {
-            $urlsegment = SiteTreeURLSegmentField::create(
-                "URLSegment",
-                $this->fieldLabel('URLSegment')
-            )
-                ->setURLPrefix($baseLink)
-                ->setURLSuffix('/' . $this->ID)
-                ->setDefaultURL($this->generateURLSegment(_t(
-                    'SilverStripe\\CMS\\Controllers\\CMSMain.NEWPAGE',
-                    'New {pagetype}',
-                    ['pagetype' => $this->i18n_singular_name()]
-                )));
-            $helpText = '';
-            if (!URLSegmentFilter::create()->getAllowMultibyte()) {
-                $helpText .= _t('SilverStripe\\CMS\\Forms\\SiteTreeURLSegmentField.HelpChars', ' Special characters are automatically converted or removed.');
+        if ($this->PubliclyAvailable) {
+            $baseLink = $this->MyDisplayPage()?->Link('show') ?? '';
+            if ($baseLink) {
+                $urlsegment = SiteTreeURLSegmentField::create(
+                    "URLSegment",
+                    $this->fieldLabel('URLSegment')
+                )
+                    ->setURLPrefix($baseLink)
+                    ->setURLSuffix('/' . $this->ID)
+                    ->setDefaultURL($this->generateURLSegment(_t(
+                        'SilverStripe\\CMS\\Controllers\\CMSMain.NEWPAGE',
+                        'New {pagetype}',
+                        ['pagetype' => $this->i18n_singular_name()]
+                    )));
+                $helpText = '';
+                if (!URLSegmentFilter::create()->getAllowMultibyte()) {
+                    $helpText .= _t('SilverStripe\\CMS\\Forms\\SiteTreeURLSegmentField.HelpChars', ' Special characters are automatically converted or removed.');
+                }
+                $urlsegment->setHelpText($helpText);
+                $fields->replaceField('URLSegment', $urlsegment);
             }
-            $urlsegment->setHelpText($helpText);
-            $fields->replaceField('URLSegment', $urlsegment);
+        } else {
+            $fields->removeByName('URLSegment');
         }
         return $fields;
     }
@@ -693,12 +711,15 @@ class CustomProductList extends DataObject
         if (!$title) {
             $title = ($list->exists() ? implode('; ', $list->column('Title')) : $this->defaultTitle());
         }
-        $filter = URLSegmentFilter::create();
-        $title = $filter->filter($title);
 
         // Fallback to generic page name if path is empty (= no valid, convertable characters)
         if (!$title || '-' === $title || '-1' === $title) {
             $title = $this->defaultTitle();
+        }
+        $x = 1;
+        while ($this->titleExists() && $x < 100) {
+            $x++;
+            $title .= ' (# ' . $x . ')';
         }
 
         return $title;
@@ -730,7 +751,7 @@ class CustomProductList extends DataObject
         $rels = $this->ListOfRelationships();
         foreach ($rels as $method => $class) {
             $relObjectOrObjects = $this->$method();
-            if(!$relObjectOrObjects->exists()) {
+            if (!$relObjectOrObjects->exists()) {
                 unset($rels[$method]);
             }
         }
@@ -751,7 +772,7 @@ class CustomProductList extends DataObject
     protected static array $_listOfRelationships = [];
     public function ListOfRelationships(): array
     {
-        if(self::$_listOfRelationships === []) {
+        if (self::$_listOfRelationships === []) {
             $relNames = [
                 'has_one',
                 'has_many',
@@ -764,14 +785,13 @@ class CustomProductList extends DataObject
                 $check = $this->config()->get($relName);
                 if (is_array($check)) {
                     foreach ($check as $name => $class) {
-                        if(is_array($class)) {
+                        if (is_array($class)) {
                             $class = $class['through'] ?? '';
                             $name = $class['from'] ?? $name;
                         }
                         $rels[$name] = $class;
                     }
                 }
-
             }
             self::$_listOfRelationships = $rels;
         }
@@ -792,21 +812,19 @@ class CustomProductList extends DataObject
     public function getLink($action = null): string
     {
         // Implement the logic for generating the link here
-        if(! $this->URLSegment) {
+        if (! $this->URLSegment) {
             $this->write();
         }
-        $page = $this->MyDisplayPage() ;
-        if($page) {
+        $page = $this->MyDisplayPage();
+        if ($page) {
             $page->setCustomList($this);
             return $page->Link();
         }
         return '';
-
     }
 
     public function MyDisplayPage(): ?CustomListPage
     {
         return CustomListPage::get()->first();
     }
-
 }

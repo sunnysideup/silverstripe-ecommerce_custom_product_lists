@@ -2,6 +2,7 @@
 
 namespace Sunnysideup\EcommerceCustomProductLists\Pages;
 
+use SilverStripe\CMS\Model\SiteTree;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
 
 /**
@@ -48,10 +49,10 @@ class CustomListPage extends ProductGroup
 
     public function canCreate($member = null, $context = [])
     {
-        if (CustomListPage::get()->exists()) {
+        if (static::get()->filter(['ClassName' => static::class])->exists()) {
             return false;
         }
-        return $this->canEdit($member);
+        return parent::canCreate($member, $context);
     }
 
     public function getCMSFields()

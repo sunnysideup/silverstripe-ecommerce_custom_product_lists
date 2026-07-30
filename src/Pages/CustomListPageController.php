@@ -23,7 +23,7 @@ class CustomListPageController extends ProductGroupController
         'show'
     ];
 
-    protected ?CustomProductList $customList = null;
+    protected mixed $customList = null;
     protected ?string $customTitle = null;
 
     public function show()
@@ -32,24 +32,26 @@ class CustomListPageController extends ProductGroupController
     }
     public function ResetPreferencesLink($action = null): string
     {
-        return (string) $this->customList?->Link();
+        return (string) $this->data()?->Link();
     }
 
     protected function init()
     {
         parent::init();
-        $urlSegment = $this->getRequest()->param('ID');
-        $id = (int) $this->getRequest()->param('OtherID');
-        if ($urlSegment) {
-            $customList = CustomProductList::get()->filter(['URLSegment' => $urlSegment, 'ID' => $id])->first();
+        $this->setCustomList(null);
+    }
 
-            if ($customList) {
-                $this->customList = $customList;
-                $this->data()->setCustomList($this->customList);
+    protected function setCustomList($customList)
+    {
+        if($customList) {
+            $this->customList = $customList;
+        } else {
+            $urlSegment = $this->getRequest()->param('ID');
+            $id = (int) $this->getRequest()->param('OtherID');
+            if ($urlSegment) {
+                $this->customList = CustomProductList::get()->filter(['URLSegment' => $urlSegment, 'ID' => $id, 'PubliclyAvailable' => true])->first();
             }
-        }
-        if (!$this->customList) {
-            return $this->httpError(404, _t('CustomListPageController.CUSTOMLISTNOTFOUND', 'Custom list not found'));
+            $this->data()->setCustomList($this->customList);
         }
     }
 
@@ -65,22 +67,20 @@ class CustomListPageController extends ProductGroupController
             $list = parent::getFinalProductList();
             $buyableClassName = Config::inst()->get($this->ClassName, 'base_buyable_class');
             $list->setProducts($buyableClassName::get()->filter(['AllowPurchase' => true]));
-            if ($list) {
-                $filterIds = $this->customList->getProductsAsInternalItemsArray();
-                if ($filterIds) {
-                    $list = $list->setExtraFilter(['InternalItemID' => $filterIds]);
-                } else {
-                    $this->customList = null;
-                }
-            } else {
-                $this->customList = null;
-            }
-        }
-        if (!$this->HasCustomList()) {
+            $list->setExtraFilter($this->getFilterForFinalProductList());
+        } else {
             return $this->httpError(404, _t('CustomListPageController.CUSTOMLISTNOTFOUND', 'Custom list not found'));
         }
         self::$finalProductListCache = $list;
         return $list;
+    }
+
+    protected function getFilterForFinalProductList($extraFilter = null, $alternativeSort = null): array
+    {
+        if($this->HasCustomList()) {
+            return ['InternalItemID' => $this->customList->getProductsAsInternalItemsArray()];
+        }
+        return ['ID' => -1];
     }
 
     public function HasCustomList(): bool
