@@ -22,7 +22,7 @@ class CustomListPage extends ProductGroup
     private static $table_name = 'CustomListPage';
 
     private static $description = 'This page provides a holder to show custom lists.';
-    private static $icon = 'sunnysideup/ecommerce:client/images/icons/productgroupsearchpage-file.gif';
+    private static $icon = 'sunnysideup/ecommerce_custom_product_lists:client/images/CustomListPage-file.svg';
     private static $singular_name = 'Product Custom Lists Page';
 
     private static $plural_name = 'Product Custom Lists Pages';
