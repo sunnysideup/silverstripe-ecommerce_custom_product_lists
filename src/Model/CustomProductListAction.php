@@ -67,8 +67,10 @@ class CustomProductListAction extends DataObject
     ];
 
     private static $searchable_fields = [
-        'ShortTitle' => 'PartialMatchFilter',
-        'CustomProductListsNames' => 'PartialMatchFilter',
+        'Title' => 'PartialMatchFilter',
+        'Started' => 'ExactMatchFilter',
+        'Stopped' => 'ExactMatchFilter',
+        'CustomProductLists.Title' => 'PartialMatchFilter',
     ];
 
     private static $casting = [
