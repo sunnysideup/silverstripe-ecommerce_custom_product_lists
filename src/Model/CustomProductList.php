@@ -30,6 +30,7 @@ use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProductGroup
 use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
+use Sunnysideup\Ecommerce\Traits\UniqueNameTrait;
 use Sunnysideup\EcommerceCustomProductLists\Pages\CustomListPage;
 
 /**
@@ -55,6 +56,8 @@ use Sunnysideup\EcommerceCustomProductLists\Pages\CustomListPage;
  */
 class CustomProductList extends DataObject
 {
+    use UniqueNameTrait;
+
     /**
      * how are product codes separated?
      *
@@ -458,11 +461,7 @@ class CustomProductList extends DataObject
         // If there is no Title set, generate one from Title
         $this->Title = $this->generateTitle();
         // Ensure that this object has a non-conflicting Title value.
-        $count = 2;
-        while ($this->titleExists()) {
-            $this->Title = preg_replace('#-\d+$#', '', (string) $this->Title) . '-' . $count;
-            ++$count;
-        }
+
         if (!$this->Locked) {
             $this->addProductsFromCategories();
             $this->addProductsFromOtherLists();
@@ -702,36 +701,6 @@ class CustomProductList extends DataObject
             'Custom Product List'
         )
             . ($this->ID ? ' ' . $this->ID : '');
-    }
-
-    protected function generateTitle(): string
-    {
-        $list = $this->Products();
-        $title = $this->Title;
-        if (!$title) {
-            $title = ($list->exists() ? implode('; ', $list->column('Title')) : $this->defaultTitle());
-        }
-
-        // Fallback to generic page name if path is empty (= no valid, convertable characters)
-        if (!$title || '-' === $title || '-1' === $title) {
-            $title = $this->defaultTitle();
-        }
-        $x = 1;
-        while ($this->titleExists() && $x < 100) {
-            $x++;
-            $title .= ' (# ' . $x . ')';
-        }
-
-        return $title;
-    }
-
-    protected function titleExists(): bool
-    {
-        // Check existence
-        return (bool) CustomProductList::get()
-            ->filter(['Title' => $this->Title])
-            ->exclude(['ID' => $this->ID])
-            ->exists();
     }
 
     public function RecentlyEdited(): DBBoolean
