@@ -34,6 +34,7 @@ use Sunnysideup\Ecommerce\Forms\Gridfield\Configs\GridFieldConfigForProducts;
 use Sunnysideup\Ecommerce\Pages\Product;
 use Sunnysideup\Ecommerce\Pages\ProductGroup;
 use Sunnysideup\Ecommerce\Traits\UniqueNameTrait;
+use Sunnysideup\EcommerceCustomProductLists\Forms\GridField\GridFieldExportWithCustomFileNameButton;
 use Sunnysideup\EcommerceCustomProductLists\Pages\CustomListPage;
 
 /**
@@ -299,7 +300,8 @@ class CustomProductList extends DataObject
             'Products to be shown',
             $this->Products(),
             GridFieldBasicPageRelationConfigNoAddExisting::create()
-                ->addComponent(new GridFieldExportButton('buttons-before-right'))
+                ->addComponent((new GridFieldExportWithCustomFileNameButton('buttons-before-right'))
+                    ->setFileNameTemplate($this->Title . '-export-{now}.csv'))
                 ->removeComponentsByType(GridFieldDeleteAction::class)
         );
         $currentProductsField->setDescription('Calculated products, based on the list of included product codes (see Main Tab).');
