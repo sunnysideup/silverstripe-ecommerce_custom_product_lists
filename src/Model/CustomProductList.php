@@ -1045,6 +1045,7 @@ class CustomProductList extends DataObject
         $niceList = [];
         if ($isNiceList) {
             foreach ($rels as $method => $class) {
+                $class = preg_replace('/\.\w+$/', '', $class);
                 $niceList[$this->methodToName($method)] = Injector::inst()->get($class)->i18n_singular_name();
             }
         }
